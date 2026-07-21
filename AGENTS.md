@@ -5,7 +5,7 @@
 ### What this repository is
 `agent-synthetix` (aka **AutoClaw**) is a **file-native, tool-agnostic multi-agent AI operating system**. It is NOT a conventional software application:
 
-- There is **no source code, build system, package manifest, lockfile, or runtime service**. The repo is Markdown only (`README.md`, `BRAINSTORM.md`, and rule/skill definitions under `.agent/rules/` and `.claude/rules/`).
+- There is **no source code, build system, package manifest, lockfile, or runtime service**. The repo is Markdown only (`README.md`, `BRAINSTORM.md`, `docs/`, and rule/skill definitions under `.agent/rules/` and `.claude/rules/`). Architecture detail lives in `docs/architecture-principles.md`.
 - The "runtime" is an AI coding agent (you) that **reads the rule files and executes the documented slash-commands**, materializing all state as plain files under `.autoclaw/` (which is gitignored — see `.gitignore`).
 - Because of this, there is **nothing to install** and the update script is intentionally a no-op.
 
