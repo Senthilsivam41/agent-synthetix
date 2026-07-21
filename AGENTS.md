@@ -21,7 +21,7 @@ Other subsystems (`/learn`, `/index-code`, `/kdream start`, `/autobuild`, `/mate
 
 ### Non-obvious caveats
 - **Use file tools (Write/edit), not shell (`mkdir`/`touch`), to create `.autoclaw/` paths** — the rules mandate this for cross-platform safety. Always use forward slashes.
-- **All command output lives under `.autoclaw/`, which is gitignored.** Running the system produces no committable diff by design; don't expect generated state to show up in `git status`.
+- **All command output lives under `.autoclaw/`, which is gitignored.** Running the system produces no committable diff by design; don't expect generated state to show up in `git status`. Do **not** force-add or commit `.autoclaw/` (including KDream). See [docs/autoclaw-and-kdream.md](./docs/autoclaw-and-kdream.md).
 - Commands must be **idempotent** — re-running `init`/`plan` updates state in place rather than duplicating it.
 - The rule files reference an aspirational TypeScript/VS Code-extension implementation (`src/...`, `package.json`, MCP tools) that **does not exist in this repo**. Treat those as future/spec references, not runnable code.
 - There is no GUI, server, port, or test suite to run. Verification means inspecting the generated files under `.autoclaw/` for correctness (e.g. valid DAG levels + no overlapping scopes between parallel agents in a sprint).
