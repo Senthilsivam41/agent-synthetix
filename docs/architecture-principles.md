@@ -289,6 +289,8 @@ Use Orchestrate for multi-agent parallelism across a repo; use MAteam for a disc
 
 **Rule:** Generated orientation and style files refresh automatically. Manual copies become stale — always read from `.autoclaw/`.
 
+**Check-in policy:** Do **not** commit `.autoclaw/` (including KDream). It is local runtime state, already covered by `.gitignore`. Specs and docs belong in git; agents recreate `.autoclaw/` via slash-commands. Full policy and purpose: [autoclaw-and-kdream.md](./autoclaw-and-kdream.md).
+
 ---
 
 ## 7. Agent Lifecycle (End-to-End)
