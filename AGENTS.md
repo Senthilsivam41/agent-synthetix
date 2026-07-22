@@ -12,8 +12,8 @@
 ### How to "run" the product (dev workflow)
 Act as the agent described in `.agent/rules/*.md` and execute the slash-commands. The canonical first run (Quick Start in `README.md`):
 
-1. `/orchestrate init` — creates `.autoclaw/orchestrator/config.yaml` + `manifests/ sprints/ reviews/ logs/`.
-2. Create a task manifest YAML in `.autoclaw/orchestrator/manifests/`.
+1. `/orchestrate init` — creates `.autoclaw/orchestrator/config.yaml` + `manifests/ sprints/ reviews/ logs/ intake/ plans/`.
+2. Recommended: drop inputs in `intake/` → `/orchestrate intake` → `ask` → `propose` → review `plans/project-plan.md` → `/orchestrate approve` (writes manifest). Soft gate: you may still hand-author a manifest under `manifests/`.
 3. `/orchestrate plan` — parses the manifest, builds a dependency DAG (Kahn topological sort), enforces scope isolation, and bin-packs tasks into `sprints/sprint-N.yaml` + `plan-summary.yaml`/`.md`.
 4. `/orchestrate status` — renders progress from the generated sprint/state files.
 

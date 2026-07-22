@@ -31,7 +31,13 @@ Decisions made → captured in README.md. These are the **open unknowns** needin
 
 **Decision made:** Human approves before any write to output (docs, PRs, posts).
 
-**Still open:**
+**Decided for Orchestrate project plans (soft gate):**
+- File-drop inputs under `.autoclaw/orchestrator/intake/`
+- Flow: `/orchestrate intake` → `ask` → `propose` → review `plans/project-plan.md` → `/orchestrate approve` (generates manifest)
+- Hand-set frontmatter `approved: true` is accepted as equivalent on approve
+- `/orchestrate plan` does **not** hard-block without an approved plan (smoke tests / hand manifests OK)
+
+**Still open (Hermes / content publishing — separate from Orchestrate):**
 - How does the human signal approval? Options:
   - Edit `.autoclaw/hermes/pending/<id>.md` → set `approved: true`
   - Run `/hermes approve <id>` command

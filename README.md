@@ -60,7 +60,12 @@ Do not confuse stores: `/index-code` writes **only** the vector store; the knowl
 Reads task manifests, builds a dependency DAG, generates sprint plans, and assigns scoped work to parallel agents.
 
 ```
-/orchestrate init         — Initialize orchestrator config
+/orchestrate init         — Initialize orchestrator config (+ intake/plans stubs)
+/orchestrate intake       — Catalog file-drop inputs under intake/
+/orchestrate ask          — Ask clarifying questions from intake
+/orchestrate propose      — Draft human-readable plans/project-plan.md
+/orchestrate approve      — Approve plan → generate task manifest
+/orchestrate revise       — Revise plan from feedback (version bump)
 /orchestrate plan         — Build DAG → assign sprints from manifest YAML
 /orchestrate assign <N>   — Assign sprint N to agents (writes context packs)
 /orchestrate status       — Show progress + stalled agents
@@ -69,6 +74,8 @@ Reads task manifests, builds a dependency DAG, generates sprint plans, and assig
 /orchestrate next         — Assign the next unblocked sprint
 /orchestrate revive <id>  — Wake a stalled agent with the right keepalive prompt
 ```
+
+Recommended path: drop inputs → intake → ask → propose → review MD → approve → plan. Soft gate: `/orchestrate plan` still accepts hand-written manifests without an approved project plan.
 
 Sprint planner uses: topological sort (Kahn), bin-packing, scope-conflict detection, capability-aware routing, and migration range allocation. **Scope isolation is enforced** — no two parallel agents share file patterns.
 
@@ -195,8 +202,19 @@ Read `.autoclaw/AGENT-ORIENTATION.md` — the authoritative description of every
 /kdream start
 ```
 
-### 6. Plan a sprint from tasks
-Create a manifest YAML in `.autoclaw/orchestrator/manifests/`, then:
+### 6. Intake → project plan → approve (recommended)
+Drop text/files (including audio or a transcript) into `.autoclaw/orchestrator/intake/`, then:
+```
+/orchestrate intake
+/orchestrate ask
+# answer clarifying questions in chat
+/orchestrate propose
+# review .autoclaw/orchestrator/plans/project-plan.md
+/orchestrate approve
+```
+`/orchestrate approve` writes a task manifest under `manifests/`. Soft gate: you may still hand-author a manifest and skip intake.
+
+### 7. Plan a sprint from tasks
 ```
 /orchestrate plan
 /orchestrate assign 1
@@ -219,6 +237,8 @@ For Cursor Cloud / agent-environment notes, see [AGENTS.md](./AGENTS.md).
   orchestrator/
     config.yaml                ← global settings
     board.json / board.md      ← active tasks + sprint status
+    intake/                    ← user file-drop inputs + INDEX.md
+    plans/                     ← project-plan.md, clarifications, status.yaml
     sprints/                   ← sprint YAMLs + context packs
     manifests/                 ← task manifest YAMLs
     comms/inboxes/             ← per-agent + shared mailboxes

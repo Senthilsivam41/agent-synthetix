@@ -151,6 +151,8 @@ Use Orchestrate for multi-agent parallelism across a repo; use MAteam for a disc
 
 **Purpose:** Turn a task manifest into conflict-free parallel work.
 
+**Intake (soft gate, before manifest):** File-drop under `orchestrator/intake/` → `/orchestrate intake` → `ask` → `propose` (writes `plans/project-plan.md`) → human review → `/orchestrate approve` (generates `manifests/<slug>.yaml`). `/orchestrate plan` does not refuse when no approved plan exists.
+
 **Algorithm (plan):**
 
 1. **Parse & validate** — IDs unique, `depends_on` resolvable, scopes non-empty; optional `required_capabilities`.
@@ -270,6 +272,8 @@ Use Orchestrate for multi-agent parallelism across a repo; use MAteam for a disc
     memory/MEMORY.md               # append-only
   orchestrator/
     config.yaml
+    intake/                        # user file-drop + INDEX.md
+    plans/                         # project-plan.md, clarifications, status.yaml
     manifests/                     # input task YAMLs
     sprints/                       # sprint-N.yaml/.md, context packs
     reviews/ logs/ board.*
@@ -297,20 +301,23 @@ Use Orchestrate for multi-agent parallelism across a repo; use MAteam for a disc
 
 ```
 1. /orchestrate init
-2. Author manifest YAML (or sync from issues — see BRAINSTORM open items)
-3. /orchestrate plan          → DAG + scope-isolated sprints
-4. /index-code + /learn       → grounded context for assignees
-5. /kdream start              → background memory + TODO watch
-6. /orchestrate assign N      → briefs + context packs + inbox task_assign
-7. Agents work in scope; heartbeat; message peers as needed
-8. task_complete + review_request → consensus (2/3 or unanimous)
-9. /orchestrate review N      → quality gates
-10. /orchestrate merge N      → land approved sprint
-11. /orchestrate next         → advance critical path
+2. Drop inputs in intake/ → /orchestrate intake → /orchestrate ask
+3. /orchestrate propose       → plans/project-plan.md for human review
+4. /orchestrate approve       → generate manifests/<slug>.yaml
+   (soft gate: hand-authored manifests still allowed without approve)
+5. /orchestrate plan          → DAG + scope-isolated sprints
+6. /index-code + /learn       → grounded context for assignees
+7. /kdream start              → background memory + TODO watch
+8. /orchestrate assign N      → briefs + context packs + inbox task_assign
+9. Agents work in scope; heartbeat; message peers as needed
+10. task_complete + review_request → consensus (2/3 or unanimous)
+11. /orchestrate review N      → quality gates
+12. /orchestrate merge N      → land approved sprint
+13. /orchestrate next         → advance critical path
     (revive stalled peers as needed)
 ```
 
-Human checkpoints sit at plan review, consensus, and merge. The system is autonomous within gates, not unbound.
+Human checkpoints sit at project-plan approval, sprint review, consensus, and merge. The system is autonomous within gates, not unbound.
 
 ---
 
