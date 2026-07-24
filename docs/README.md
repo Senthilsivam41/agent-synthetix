@@ -4,6 +4,7 @@ Canonical docs for **agent-synthetix** (AutoClaw) — a file-native, tool-agnost
 
 | Doc | Purpose |
 |---|---|
+| [How to run locally](./how-to-run.md) | Why `/orchestrate` fails in the terminal; how to run commands in agent chat |
 | [Architecture Principles](./architecture-principles.md) | Design principles, subsystem contracts, coordination model, and detailed implementation approach |
 | [`.autoclaw` and KDream](./autoclaw-and-kdream.md) | Check-in policy (do not commit runtime state) and primary purpose of `.autoclaw/` / KDream |
 | [UX — Orchestrate Control Console](./ux/README.md) | End-user UI/UX design specs (intake → approve → sprints); no app runtime yet |

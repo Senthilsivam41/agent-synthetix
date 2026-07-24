@@ -2,7 +2,9 @@
 
 > **A self-hosted, multi-agent AI operating system** — autonomous research, content creation, code authoring, and continuous self-improvement — coordinated by a file-native agent layer that survives reboots, survives switching AI tools, and requires no hidden server.
 
-**Docs:** [Architecture principles & detailed approach](./docs/architecture-principles.md) · [`.autoclaw` / KDream check-in policy](./docs/autoclaw-and-kdream.md) · [Docs index](./docs/README.md) · [Open design questions](./BRAINSTORM.md)
+**Docs:** [How to run locally](./docs/how-to-run.md) · [Architecture principles](./docs/architecture-principles.md) · [`.autoclaw` / KDream check-in policy](./docs/autoclaw-and-kdream.md) · [Docs index](./docs/README.md) · [Open design questions](./BRAINSTORM.md)
+
+> **Slash-commands are not a terminal CLI.** Type `/orchestrate init` in **Cursor Agent chat**, not in the shell. See [docs/how-to-run.md](./docs/how-to-run.md).
 
 ---
 
@@ -179,6 +181,8 @@ Details: [Architecture Principles §5.2](./docs/architecture-principles.md#52-cr
 
 ## Quick Start
 
+> Commands below are sent in **agent chat**, not the terminal. Full guide: [docs/how-to-run.md](./docs/how-to-run.md).
+
 ### 1. Initialize the orchestrator
 ```
 /orchestrate init
@@ -307,6 +311,7 @@ Hermes profiles are personality definitions loaded via `.agent/rules/`. Current 
 
 | Doc | Contents |
 |---|---|
+| [docs/how-to-run.md](./docs/how-to-run.md) | Run slash-commands in agent chat (not the terminal) |
 | [docs/architecture-principles.md](./docs/architecture-principles.md) | Design principles, subsystem contracts, end-to-end lifecycle, verification |
 | [docs/autoclaw-and-kdream.md](./docs/autoclaw-and-kdream.md) | Why `.autoclaw/` / KDream exist; do not check them into git |
 | [docs/README.md](./docs/README.md) | Documentation index |
