@@ -7,15 +7,16 @@ Canonical docs for **agent-synthetix** (AutoClaw) — a file-native, tool-agnost
 | [How to run locally](./how-to-run.md) | Why `/orchestrate` fails in the terminal; how to run commands in agent chat |
 | [Architecture Principles](./architecture-principles.md) | Design principles, subsystem contracts, coordination model, and detailed implementation approach |
 | [`.autoclaw` and KDream](./autoclaw-and-kdream.md) | Check-in policy (do not commit runtime state) and primary purpose of `.autoclaw/` / KDream |
+| [UX — Orchestrate Control Console](./ux/README.md) | End-user UI/UX design specs (intake → approve → sprints); no app runtime yet |
 | [../README.md](../README.md) | Product overview, command surface, quick start |
 | [../BRAINSTORM.md](../BRAINSTORM.md) | Open design questions still undecided |
 | [../AGENTS.md](../AGENTS.md) | Cursor Cloud / agent runtime notes for this repo |
 
 ## How to read these docs
 
-1. Start with [How to run locally](./how-to-run.md) if slash-commands fail in the terminal.
-2. Read the [README](../README.md) for what the system does and how to invoke it.
-3. Read [Architecture Principles](./architecture-principles.md) before extending subsystems, adding agents, or changing the on-disk contract.
-4. Read [`.autoclaw` and KDream](./autoclaw-and-kdream.md) before committing anything under `.autoclaw/` — that tree is gitignored runtime state.
+1. Start with the [README](../README.md) for what the system does and how to invoke it.
+2. Read [Architecture Principles](./architecture-principles.md) before extending subsystems, adding agents, or changing the on-disk contract.
+3. Read [`.autoclaw` and KDream](./autoclaw-and-kdream.md) before committing anything under `.autoclaw/` — that tree is gitignored runtime state.
+4. For human-facing Orchestrate UX, read [UX specs](./ux/README.md) — design only until a UI host ships.
 5. Check [BRAINSTORM.md](../BRAINSTORM.md) for unresolved product decisions — do not treat open items as shipped behavior.
 6. Treat `.agent/rules/*.md` as the executable specification the host agent follows at runtime.
