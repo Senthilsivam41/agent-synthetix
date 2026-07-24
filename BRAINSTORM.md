@@ -36,6 +36,7 @@ Decisions made → captured in README.md. These are the **open unknowns** needin
 - Flow: `/orchestrate intake` → `ask` → `propose` → review `plans/project-plan.md` → `/orchestrate approve` (generates manifest)
 - Hand-set frontmatter `approved: true` is accepted as equivalent on approve
 - `/orchestrate plan` does **not** hard-block without an approved plan (smoke tests / hand manifests OK)
+- End-user console UX (IA, screens, tokens, a11y, command handoff) is specified under [docs/ux/](./docs/ux/) — design spec only; not a shipped UI runtime
 
 **Still open (Hermes / content publishing — separate from Orchestrate):**
 - How does the human signal approval? Options:
