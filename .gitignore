@@ -1,3 +1,9 @@
 .autoclaw
 .autoclaw/
 *.autoclaw
+
+# Orchestrate console (Vite)
+console/node_modules/
+console/dist/
+console/.vite/
+console/tsconfig.tsbuildinfo

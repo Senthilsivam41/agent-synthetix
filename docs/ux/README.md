@@ -1,6 +1,6 @@
 # UX documentation
 
-Design specifications for AutoClaw end-user surfaces. These are **specs only** — this repository remains Markdown + agent rules; there is no app binary to run.
+Design specifications for AutoClaw end-user surfaces. Runtime scaffold lives in [`console/`](../../console/) (Vite + React); run `cd console && npm install && npm run dev`.
 
 | Spec | Purpose |
 |---|---|
