@@ -14,7 +14,12 @@
 
 Determine the sub-command from the user's message:
 
-- `init` → **Initialize orchestrator config and manifest**
+- `init` → **Initialize orchestrator config and directories**
+- `intake` → **Catalog file-drop inputs under `intake/`**
+- `ask` → **Ask clarifying questions from intake**
+- `propose` → **Draft human-readable `plans/project-plan.md`**
+- `approve` → **Approve plan and generate task manifest**
+- `revise` → **Revise plan from user feedback (bump version)**
 - `plan` / `plan --manifest <path>` → **Generate sprint plans from manifest**
 - `assign` / `assign <sprint>` → **Assign a sprint to agents**
 - `status` → **Show orchestration progress** (surfaces stalled agents)
@@ -24,23 +29,142 @@ Determine the sub-command from the user's message:
 - `revive <agent-id>` → **Render the keepalive prompt for a stalled agent**
 - No sub-command + task description → **Quick plan: infer manifest from description**
 
+Also drain pending slash-command intents from `.autoclaw/orchestrator/commands/pending.jsonl` (one JSON object per line: `{ "id", "command", "args", "enqueued_at" }`). On process: execute the matching sub-command, append to `commands/processed.jsonl`, remove from pending. Console UI enqueues; agent executes.
+
 ---
 
 ## init — Initialize Orchestrator
 
-1. Read `.autoclaw/orchestrator/config.yaml`. If it exists, report current config and skip creation.
-2. If missing, create the default config structure:
+1. Read `.autoclaw/orchestrator/config.yaml`. If it exists, report current config; do **not** overwrite it. Still create any **missing** directories listed below (idempotent).
+2. If config is missing, create the default config structure:
    - `.autoclaw/orchestrator/config.yaml` — global settings (agents, git, planning, gates, review, scope, logging)
    - `.autoclaw/orchestrator/manifests/` — directory for task manifests
    - `.autoclaw/orchestrator/sprints/` — directory for generated sprint plans
    - `.autoclaw/orchestrator/reviews/` — directory for review reports
    - `.autoclaw/orchestrator/logs/` — directory for execution logs
-3. If a spec `tasks.md` exists (e.g., `.kiro/specs/*/tasks.md`), offer to generate a manifest from it.
-4. Confirm: "Orchestrator initialized. Create a manifest in `.autoclaw/orchestrator/manifests/` or run `/orchestrate plan` to generate sprints."
+3. Always ensure these intake/approval stubs exist (create if missing, do not clobber non-empty content):
+   - `.autoclaw/orchestrator/intake/` + `intake/INDEX.md` (catalog stub)
+   - `.autoclaw/orchestrator/plans/status.yaml` — `status: collecting`
+   - `.autoclaw/orchestrator/plans/clarifications.md` — empty open/answered sections
+   - `.autoclaw/orchestrator/commands/` + empty `pending.jsonl` / `processed.jsonl` if missing
+4. If a spec `tasks.md` exists (e.g., `.kiro/specs/*/tasks.md`), offer to generate a manifest from it.
+5. Confirm: "Orchestrator initialized. Drop inputs in `.autoclaw/orchestrator/intake/` then `/orchestrate intake`, or create a manifest and run `/orchestrate plan`."
+
+---
+
+## Intake & plan approval (soft gate)
+
+**Soft gate:** Recommended path for real work is intake → ask → propose → approve → plan. `/orchestrate plan` **must not refuse** when no approved plan exists (smoke tests / hand-written manifests stay valid). If `plans/status.yaml` exists and `status` ∉ {`approved`, `manifested`}, emit one note recommending the intake path, then continue planning.
+
+### On-disk contract
+
+| Path | Role |
+|---|---|
+| `intake/` | User file-drop: `.md`/`.txt`, PDFs, images, audio |
+| `intake/INDEX.md` | Catalog of received inputs + source type |
+| `plans/project-plan.md` | Human-readable plan (YAML frontmatter) |
+| `plans/project-plan.v{N}.md` | Sidecar snapshot on revise |
+| `plans/clarifications.md` | Open/answered Q&A log |
+| `plans/status.yaml` | Machine status machine |
+| `commands/pending.jsonl` | Console → agent slash-command queue |
+| `commands/processed.jsonl` | Executed command audit log |
+
+`plans/status.yaml` states: `collecting` → `clarifying` → `draft` → `awaiting_approval` → `approved` → `manifested`.
+
+`project-plan.md` frontmatter:
+
+```yaml
+---
+status: draft          # draft | awaiting_approval | approved | superseded
+approved: false
+approved_at: null
+approved_by: null
+source: intake/
+version: 1
+---
+```
+
+### Project plan body (agent-authored)
+
+```markdown
+# Project Plan — {title}
+## Goal
+## Constraints / Non-goals
+## Phases
+### Phase 1 — {name}
+- Tasks: id, name, scope globs, depends_on, effort, subtasks
+### Phase N — ...
+## Risks
+## Open questions
+## Approval
+- [ ] User approved via /orchestrate approve
+```
+
+### Approve → manifest mapping
+
+On `/orchestrate approve`, write `.autoclaw/orchestrator/manifests/<slug>.yaml` where `<slug>` is a kebab-case project title:
+
+- Each plan task → manifest task with `id`, `name`, `depends_on`, `scope`, `effort`, `subtasks`.
+- Phases are dependency layers: tasks in phase N>1 default `depends_on` to all task ids from phase N-1 unless marked parallel / own `depends_on`.
+- Do not invent empty scopes. If a task lacks scope, ask via revise before approving.
+- Set `plans/status.yaml` → `approved` when the plan is accepted, then → `manifested` (with `manifest_path`) after the manifest file is written.
+- Suggest `/orchestrate plan` next.
+
+---
+
+## intake — Catalog File-Drop Inputs
+
+1. Ensure `intake/` and `plans/` stubs exist (same as init step 3).
+2. List files under `.autoclaw/orchestrator/intake/` (ignore `INDEX.md`).
+3. If empty: tell the user to drop text/files into `intake/` and re-run. Leave `status: collecting`.
+4. If non-empty: rewrite `intake/INDEX.md` with file, type (`text` / `pdf` / `image` / `audio` / `other`), notes. Best-effort read text; audio without transcript → note to drop `.txt`/`.md`. Set `plans/status.yaml` → `collecting` (or keep `clarifying` if clarifications already open).
+5. Confirm: "Intake indexed {N} file(s). Run `/orchestrate ask` to clarify, or `/orchestrate propose` if enough context."
+
+---
+
+## ask — Clarifying Questions
+
+1. Read `intake/INDEX.md` and readable intake files. If intake empty, redirect to `/orchestrate intake`.
+2. Ask **1–5 critical** questions only (goals, constraints, file scopes, deadlines, out-of-scope).
+3. Append questions under `## Open` in `plans/clarifications.md` (do not wipe `## Answered`).
+4. Set `plans/status.yaml` → `clarifying`.
+5. Present questions in chat. When user answers, append under `## Answered` and remove from Open.
+
+---
+
+## propose — Draft Project Plan
+
+1. Require intake non-empty (or existing answered clarifications). If too vague, ask first.
+2. Write/update `.autoclaw/orchestrator/plans/project-plan.md` with frontmatter (`status: awaiting_approval`, `approved: false`) and body structure above.
+3. Set `plans/status.yaml` → `awaiting_approval`, `plan_path: plans/project-plan.md`, bump `version`.
+4. Confirm: "Draft plan at `.autoclaw/orchestrator/plans/project-plan.md`. Review, `/orchestrate revise`, or `/orchestrate approve`."
+
+---
+
+## approve — Approve Plan & Generate Manifest
+
+1. Read `plans/project-plan.md`. Allow if frontmatter `status` is `awaiting_approval`, **or** `approved: true` set by hand.
+2. If `draft`/`clarifying`/`collecting` without hand-approval: refuse; point to propose/review.
+3. Set frontmatter `status: approved`, `approved: true`, `approved_at` (ISO UTC), `approved_by: user`. Check Approval checkbox. Set `plans/status.yaml` → `approved`.
+4. Generate manifest YAML from phases/tasks. Write to `manifests/<slug>.yaml`.
+5. Set `plans/status.yaml` → `manifested`, `manifest_path`, `updated_at`.
+6. Confirm: "Plan approved. Manifest written to `manifests/<slug>.yaml`. Run `/orchestrate plan`."
+
+---
+
+## revise — Revise Project Plan
+
+1. Read current `project-plan.md`. Copy to `plans/project-plan.v{version}.md` before changing.
+2. Apply user feedback; bump `version`; set `status: awaiting_approval`, `approved: false`; clear `approved_at`/`approved_by`.
+3. Set `plans/status.yaml` → `awaiting_approval`, update `version`.
+4. Confirm: "Plan revised to v{N}. Review, then `/orchestrate approve`."
 
 ---
 
 ## plan — Generate Sprint Plans
+
+### Soft gate note
+If `plans/status.yaml` exists and `status` ∉ {`approved`, `manifested`}, print one line: "Note: no approved project plan yet — consider `/orchestrate intake` → … → `/orchestrate approve`. Continuing with manifest." Then proceed. Never hard-block.
 
 ### Input
 Read the manifest YAML from the specified path (default: first `.yaml` in `manifests/`).

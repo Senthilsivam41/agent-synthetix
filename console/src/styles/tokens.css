@@ -1,0 +1,44 @@
+:root {
+  --color-bg: #0f1419;
+  --color-bg-elevated: #171d25;
+  --color-bg-quiet: #1c2430;
+  --color-fg: #e8eef4;
+  --color-fg-muted: #9aa8b5;
+  --color-fg-subtle: #6b7a88;
+  --color-accent: #2ec4b6;
+  --color-accent-hover: #3dd4c6;
+  --color-accent-fg: #06221f;
+  --color-success: #3dbf7a;
+  --color-warning: #e3b341;
+  --color-danger: #e35d6a;
+  --color-info: #5b9fd4;
+  --color-border: #2a3441;
+  --color-border-strong: #3d4b5c;
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-accent);
+
+  --font-display: "Newsreader", "Source Serif 4", Georgia, serif;
+  --font-ui: "IBM Plex Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --content-prose: 42rem;
+  --shell-max: 72rem;
+  --duration-fast: 120ms;
+  --duration-enter: 220ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-enter: 0ms;
+  }
+}
