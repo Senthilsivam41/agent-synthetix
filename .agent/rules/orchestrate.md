@@ -10,6 +10,10 @@
 4. **Scope isolation is sacred.** Never assign overlapping file scopes to parallel agents in the same sprint. The planner MUST detect and prevent conflicts.
 5. **Output discipline.** Confirm in ≤5 lines: what changed, sprint count, agent assignments, next action. No reasoning narration.
 
+### Authority boundary
+
+This rule-driven path is a portable compatibility workflow. Direct writes to sprint, status, command, or inbox files are **advisory** and must not be described as kernel-enforced collision prevention or verified completion. For those guarantees, invoke the shared control-plane kernel through the local console or `npm run control-plane -- …` in `console/`. The kernel's SQLite state wins during reconciliation; never overwrite it from a stale YAML/JSON projection.
+
 ## On Invocation
 
 Determine the sub-command from the user's message:

@@ -41,11 +41,17 @@ Present in `.agent/rules/orchestrate.md`:
 |---|---|
 | Vite + React + TS scaffold | Done |
 | Design tokens CSS | Done |
-| FS API plugin (`plugins/orchestratorFsApi.ts`) | Done — R/W `.autoclaw/orchestrator/` |
+| Shared control-plane kernel | Done — SQLite WAL, migrations, events/projections, legacy import |
+| Collision enforcement | Done — canonical scopes, transactional leases, isolated Git worktrees, post-run diff guard |
+| Evidence and review | Done — gates, artifact provenance, file-bus request, independent verdict |
+| Dual-router adapter | Done — local Python shim + subprocess lifecycle; mock conformance passes; live smoke pending credentials |
+| Headless command | Done — init/plan/run/ingest/reconcile/status/cancel/cleanup plus registration/session helpers |
+| FS/API plugin (`plugins/orchestratorFsApi.ts`) | Done — v1 kernel API plus preserved compatibility endpoints |
 | Command enqueue API | Done |
 | Shell + step rail | Done |
 | **Intake** screen | Done (upload / index / enqueue) |
-| Clarify / Plan / Approve / Sprints | Placeholders only |
+| Clarify / Plan / Approve | Placeholders (intentionally outside this tranche) |
+| Sprints | Done — assignments, dependencies/scopes, leases/worktrees, timeline, reviews, findings |
 | Codegraph index | Done (2026-08-01) — `.codegraph/` local; use `codegraph sync` after edits |
 
 ### Run console
@@ -57,13 +63,14 @@ cd console && npm install && npm run dev
 
 ## Known gaps
 
-1. Remaining console screens not built
-2. Agent must drain `commands/pending.jsonl` manually / via `/orchestrate …` in chat
-3. No deterministic contract/conformance test harness yet
+1. Clarify, Plan, and Approve console screens are not built
+2. Live dual-router smoke is pending explicitly available credentials
+3. Guard schema validation is intentionally minimal and should graduate to generated full JSON Schema validation before developer preview
 4. Runtime KDream state and `MEMORY.md` have not been initialized
 5. `.autoclaw/` is local runtime (gitignored) — do not commit
 
 ## Verification snapshot
 
-- `npm run build` in `console/` succeeded at scaffold time
-- Intake writes files + queues `/orchestrate intake`
+- `npm test` passes the contract, store, scope, collision, out-of-scope, and independent-review suites
+- `npm run build` succeeds on Node 22.22.3 (built-in SQLite emits its documented experimental warning)
+- Kernel-managed acceptance was exercised end to end with the mock adapter

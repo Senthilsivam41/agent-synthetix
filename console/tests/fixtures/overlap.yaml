@@ -1,0 +1,9 @@
+tasks:
+  - id: broad-console
+    write_scopes: ["console/**"]
+    agent_id: worker-a
+    reviewer_agent_id: reviewer
+  - id: console-source
+    write_scopes: ["console/src/**"]
+    agent_id: worker-b
+    reviewer_agent_id: reviewer

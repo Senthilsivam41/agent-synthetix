@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "./lib/api";
 import { IntakeScreen } from "./screens/IntakeScreen";
 import { PlaceholderScreen } from "./screens/PlaceholderScreen";
+import { SprintsScreen } from "./screens/SprintsScreen";
 
 const STEPS = [
   { id: "intake", label: "Intake" },
@@ -95,10 +96,7 @@ export default function App() {
           />
         )}
         {step === "sprints" && (
-          <PlaceholderScreen
-            title="Sprints"
-            body="Sprint board from sprints/*.yaml; soft-gate banner when plan not approved."
-          />
+          <SprintsScreen />
         )}
       </main>
 

@@ -19,8 +19,8 @@ AI coding agents are powerful in a single session and fragile across sessions:
 
 ## 2. Core Thesis
 
-> **Plain files under `.autoclaw/` are the operating system.**  
-> The host AI agent is the CPU. Rule files under `.agent/rules/` are the instruction set. There is no mandatory daemon or cloud control plane.
+> **Host agents do the cognitive work; the local kernel owns mechanical truth.**
+> Rule files remain the portable instruction set. SQLite WAL under `.autoclaw/` is authoritative for kernel-managed identities, leases, transitions, evidence, and reviews; files remain the open audit and compatibility layer. There is no mandatory cloud control plane.
 
 Implications:
 
@@ -28,7 +28,7 @@ Implications:
 |---|---|
 | State survives reboots and tool switches | Everything durable lives under `.autoclaw/` (gitignored runtime state) |
 | Any tool can participate | Claude Code, Cursor, Kiro, Copilot, Windsurf, Antigravity, etc. |
-| Humans can audit everything | JSON, YAML, and Markdown — no opaque blobs required for coordination |
+| Humans can audit everything | SQLite is authoritative; immutable JSON events, YAML projections, and Markdown summaries remain inspectable |
 | Idempotency is mandatory | Re-running `/orchestrate plan`, `/learn`, or `/kdream start` must not duplicate or corrupt state |
 | Spec ≠ aspirational runtime | Rule files may reference future TypeScript/MCP surfaces; this repo’s runtime is the agent executing those rules |
 
@@ -81,6 +81,7 @@ Do not conflate stores. Each has one job:
 | Learnings | `.autoclaw/learnings/` | Distilled kept-vs-discarded session insights |
 | KDream memory | `.autoclaw/kdream/memory/MEMORY.md` | Long-lived project memory (append-only) |
 | Orchestrator board | `.autoclaw/orchestrator/` | Sprint DAG, assignments, inboxes, consensus, heartbeats |
+| Control-plane store | `.autoclaw/orchestrator/control-plane.db` | Kernel-managed identities, leases, executions, events, evidence, and reviews |
 
 `/index-code` writes **only** the vector store. `/learn` and the orchestrator write the KG. Hand-authored copies of generated steering files (e.g. `AGENT-ORIENTATION.md`) are forbidden — they drift.
 
@@ -129,10 +130,11 @@ Each Hermes profile / rule file owns a narrow surface. Cross-cutting concerns (i
 
 ### 4.1 Control plane vs data plane
 
-- **Control plane**: slash-commands + rule files + orchestrator board/comms.
+- **Enforced control plane**: the shared TypeScript kernel, SQLite WAL, worktree/lease manager, deterministic guard, and review ingestion.
+- **Advisory compatibility plane**: slash-commands + rule files + legacy orchestrator files. These remain portable but cannot claim collision-free or evidence-gated execution unless they call the kernel.
 - **Data plane**: vector DB, KG, learnings, MEMORY.md, mateam scratchpads, autobuild run logs.
 
-Agents never need a network round-trip to coordinate; they write files the next agent (or tick) will read.
+Agents never need a network round-trip to coordinate. The console is localhost-only, and the file bus transports schema-versioned review requests and verdicts.
 
 ### 4.2 Two coordination modes
 

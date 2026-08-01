@@ -2,6 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Plugin, Connect } from "vite";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { ControlPlaneKernel } from "./control-plane/kernel";
+import { WorkspaceLock } from "./control-plane/store";
 
 type Options = { workspaceRoot: string };
 
@@ -45,6 +47,9 @@ async function ensureCommands(root: string) {
 
 export function orchestratorFsApi(opts: Options): Plugin {
   const root = orchRoot(opts.workspaceRoot);
+  let kernel: ControlPlaneKernel | null = null;
+  let ready: Promise<unknown> | null = null;
+  let lock: WorkspaceLock | null = null;
 
   const handler: Connect.NextHandleFunction = async (req, res, next) => {
     if (!req.url?.startsWith("/api/orchestrator")) return next();
@@ -52,6 +57,58 @@ export function orchestratorFsApi(opts: Options): Plugin {
     try {
       const url = new URL(req.url, "http://localhost");
       const pathname = url.pathname;
+
+      if (pathname.startsWith("/api/orchestrator/v1/")) {
+        if (!kernel || !ready) throw new Error("control-plane kernel is not initialized");
+        await ready;
+
+        if (req.method === "GET" && pathname === "/api/orchestrator/v1/status") {
+          return sendJson(res, 200, kernel.status());
+        }
+        if (req.method === "POST" && pathname === "/api/orchestrator/v1/agents") {
+          return sendJson(res, 201, kernel.registerAgent(JSON.parse(await readBody(req))));
+        }
+        if (req.method === "POST" && pathname === "/api/orchestrator/v1/sessions") {
+          const body = JSON.parse(await readBody(req)) as { agent_id: string; ttl_seconds?: number };
+          return sendJson(res, 201, kernel.createSession(body.agent_id, body.ttl_seconds));
+        }
+        if (req.method === "POST" && pathname === "/api/orchestrator/v1/plans/validate") {
+          const body = JSON.parse(await readBody(req)) as { manifest: string };
+          return sendJson(res, 200, await kernel.plan(body.manifest));
+        }
+        if (req.method === "POST" && pathname === "/api/orchestrator/v1/executions") {
+          const body = JSON.parse(await readBody(req)) as { assignment_id: string; session_id?: string };
+          const assignment = kernel.assignment(body.assignment_id);
+          const sessionId = body.session_id ?? kernel.activeSessionForAgent(assignment.assigned_agent_id).session_id;
+          return sendJson(res, 202, await kernel.run(body.assignment_id, sessionId));
+        }
+        const executionMatch = pathname.match(/^\/api\/orchestrator\/v1\/executions\/([^/]+)$/);
+        if (req.method === "GET" && executionMatch) return sendJson(res, 200, kernel.execution(decodeURIComponent(executionMatch[1]!)));
+        const cancelMatch = pathname.match(/^\/api\/orchestrator\/v1\/executions\/([^/]+)\/cancel$/);
+        if (req.method === "POST" && cancelMatch) return sendJson(res, 200, kernel.cancel(decodeURIComponent(cancelMatch[1]!)));
+        const retryMatch = pathname.match(/^\/api\/orchestrator\/v1\/executions\/([^/]+)\/retry$/);
+        if (req.method === "POST" && retryMatch) {
+          const body = JSON.parse((await readBody(req)) || "{}") as { session_id?: string };
+          return sendJson(res, 202, await kernel.retry(decodeURIComponent(retryMatch[1]!), body.session_id));
+        }
+        if (req.method === "POST" && pathname === "/api/orchestrator/v1/events/ingest") return sendJson(res, 200, await kernel.ingestEvent(JSON.parse(await readBody(req))));
+        if (req.method === "POST" && pathname === "/api/orchestrator/v1/inbox/ingest") return sendJson(res, 200, await kernel.ingest());
+        if (req.method === "POST" && pathname === "/api/orchestrator/v1/verdicts") return sendJson(res, 200, await kernel.ingestVerdict(JSON.parse(await readBody(req))));
+        if (req.method === "GET" && pathname === "/api/orchestrator/v1/findings") return sendJson(res, 200, { findings: kernel.status().findings });
+        const evidenceMatch = pathname.match(/^\/api\/orchestrator\/v1\/executions\/([^/]+)\/evidence$/);
+        if (req.method === "GET" && evidenceMatch) {
+          const executionId = decodeURIComponent(evidenceMatch[1]!);
+          const rows = kernel.store.db.prepare("SELECT evidence_json FROM evidence WHERE execution_id=? ORDER BY created_at").all(executionId) as Array<{ evidence_json: string }>;
+          return sendJson(res, 200, { evidence: rows.map((row) => JSON.parse(row.evidence_json)) });
+        }
+        const artifactMatch = pathname.match(/^\/api\/orchestrator\/v1\/executions\/([^/]+)\/artifacts$/);
+        if (req.method === "GET" && artifactMatch) {
+          const executionId = decodeURIComponent(artifactMatch[1]!);
+          const manifestPath = path.join(root, "artifacts", executionId, "artifact-manifest.json");
+          return sendJson(res, 200, JSON.parse(await fs.readFile(manifestPath, "utf8")));
+        }
+        return sendJson(res, 404, { error: "v1 endpoint not found" });
+      }
 
       if (req.method === "GET" && pathname === "/api/orchestrator/status") {
         const statusPath = path.join(root, "plans", "status.yaml");
@@ -174,6 +231,7 @@ export function orchestratorFsApi(opts: Options): Plugin {
         });
         const pending = path.join(root, "commands", "pending.jsonl");
         await fs.appendFile(pending, `${line}\n`, "utf8");
+        await kernel?.recordCommand(body.command, body.args ?? {}, "pending", id);
         return sendJson(res, 200, { ok: true, id, queued: body.command });
       }
 
@@ -200,7 +258,17 @@ export function orchestratorFsApi(opts: Options): Plugin {
   return {
     name: "orchestrator-fs-api",
     configureServer(server) {
+      lock = new WorkspaceLock(root);
+      lock.acquire("vite-console");
+      kernel = new ControlPlaneKernel(opts.workspaceRoot);
+      ready = kernel.init();
       server.middlewares.use(handler);
+      server.httpServer?.once("close", () => {
+        kernel?.close();
+        kernel = null;
+        lock?.release();
+        lock = null;
+      });
     },
   };
 }
