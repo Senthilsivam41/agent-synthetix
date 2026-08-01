@@ -4,17 +4,23 @@
 
 **Updated:** 2026-08-01
 
-**Status:** Proposed strategy for validation; implementation phases are gated
+**Status:** Accepted product positioning; implementation phases are gated
 
-**Planning horizon:** Foundation → verified orchestration → governed improvement
+**Planning horizon:** Collision-free coordination → verified orchestration → governed improvement
 
 ## 1. Executive summary
 
-agent-synthetix will be positioned as the **workspace-native control plane for heterogeneous coding-agent fleets**.
+agent-synthetix is positioned as a **workspace-native agent control plane**.
 
-It will not compete directly with model providers, agent SDKs, general workflow builders, or individual coding agents. Instead, it will coordinate agents from those ecosystems inside a software workspace through open, local-first contracts.
+It is not an agent framework and not an agent OS. It is a control plane for the coding agents that teams already run.
 
-> **Coordinate every coding agent. Verify every result. Improve only from evidence.**
+> **Parallel agent work without parallel-agent collisions.**
+
+agent-synthetix lets multiple coding agents—across IDEs, CLIs, and model providers—work in the same repository at the same time, with non-overlapping scopes and an inspectable record of what happened.
+
+**Primary CTA:** Start locally · See the collision demo
+
+This hero leads with the most concrete, binary, and demonstrable customer problem. Performance intelligence and governed evolution remain part of the product thesis, but they must not lead public positioning until they are independently verifiable.
 
 The roadmap follows this sequence:
 
@@ -36,7 +42,7 @@ The roadmap follows this sequence:
 7. Optional economy experiment
 ```
 
-The first commercially meaningful milestone is **verified heterogeneous-agent orchestration**. Controlled evolution is a later, evidence-gated capability. An internal economy is an optional experiment, not a committed destination.
+The maturity path is **Coordinate → Verify → Improve**. Collision-free coordination is the lead product promise. Verified heterogeneous-agent orchestration is the next commercially meaningful milestone. Controlled evolution is a later, evidence-gated capability. An internal economy is an optional experiment, not a committed destination.
 
 ## 2. Product vision
 
@@ -52,38 +58,64 @@ agent-synthetix will treat agents as a fleet whose members are:
 - Comparable by task-specific outcomes
 - Improvable through versioned, reversible profile changes
 
-The long-term product is not merely an orchestrator. It is a portable evidence layer that can show which agent configuration works for which task family, under which constraints, and why.
+The long-term product extends the control plane with a portable evidence layer that can show which agent configuration works for which task family, under which constraints, and why.
 
 ## 3. Category and positioning
 
 ### 3.1 Category
 
-**Open Agent Control Plane for Software Workspaces**
+**Workspace-native agent control plane**
 
-“Multi-agent operating system” remains the architectural vision. “Agent control plane” is the market-facing category because it maps to concrete buyer expectations: registration, routing, policy, evidence, verification, recovery, and governance.
+Not an agent framework. Not an agent OS. A control plane for the coding agents that teams already run.
 
 ### 3.2 Positioning statement
 
-> For software teams using multiple AI coding agents across IDEs, CLIs, and model providers, agent-synthetix is a workspace-native control plane that plans work, prevents scope collisions, preserves shared state, independently verifies results, and improves agent strategies from evidence. Unlike vendor-specific runtimes and cloud workflow platforms, it coordinates the agents that teams already use through open, auditable, local-first contracts.
+> For software teams using multiple AI coding agents across IDEs, CLIs, and model providers, agent-synthetix is a workspace-native control plane that gives parallel agents dependency-ordered, non-overlapping work and an inspectable record of the result. It coordinates the agents that teams already use through open, local-first contracts.
 
-### 3.3 Core messaging
+### 3.3 Hero and one-line summary
 
-| Pillar | Customer promise | Product proof required |
-|---|---|---|
-| Bring existing agents | Keep the agents; standardize how they collaborate | Versioned adapters and canonical contracts |
-| Workspace-native control | Coordination remains inspectable and portable | Local-first state, documented stores, export/replay |
-| Collision-free parallel work | Parallel agents do not become parallel conflicts | Scope ownership, leases, conflict detection |
-| Evidence-gated completion | A task is not complete because an agent says so | Independent verification and provenance |
-| Governed evolution | Improve profiles without silent behavioral drift | Shadow evaluation, canaries, promotion, rollback |
+**Hero:** Parallel agent work without parallel-agent collisions.
 
-### 3.4 Claims by maturity
+**One-line summary:** Run every coding agent as one coordinated fleet—without collisions, and with proof.
 
-| Maturity | Permitted positioning |
+**Trust statement:** Local-first by default. Open contracts. No mandatory hosted control plane.
+
+### 3.4 Shipped product pillars
+
+#### Bring your existing agents
+
+No new agent framework to learn. Existing coding agents keep doing what they do; agent-synthetix standardizes how they share a workspace.
+
+> **Keep the agents. Standardize how they collaborate.**
+
+#### Collision-free execution
+
+agent-synthetix assigns scoped, dependency-ordered work through a DAG, prevents parallel assignments from sharing file scopes, detects conflicts during planning, and identifies stalled agent slots for recovery.
+
+> **Two agents. One repo. Zero collisions.**
+
+#### Evidence before “done”
+
+A task must carry scope, quality-gate, review, and provenance evidence before it is accepted. The roadmap strengthens this existing contract with deterministic validation and independently replayable telemetry.
+
+> **A task is not complete because an agent says so.**
+
+### 3.5 Roadmap messaging
+
+Performance intelligence and governed evolution belong in architecture, roadmap, and “where we are headed” material—not in the homepage hero until their graduation criteria are met.
+
+- **Performance intelligence:** Compare verified outcomes across agents and route future work to the strongest agent for a task family.
+- **Governed evolution:** Improve strategies only through evaluated, versioned, and reversible profile changes—not autonomous or silent self-modification.
+
+> **Agents improve through evaluated, versioned, and reversible changes—not silent self-modification.**
+
+### 3.6 Claims by maturity
+
+| Label | Unlocked by |
 |---|---|
-| Current | Open-source research preview for workspace-native multi-agent coordination |
-| Developer preview | Verified heterogeneous-agent orchestration |
-| Validated optimization | Evidence-gated agent optimization platform |
-| Enterprise-ready, only after controls ship | Governed cross-provider agent operations |
+| Research preview — current | Collision prevention and evidence-gated completion demonstrated end to end |
+| Developer preview | Contracts finalized, dual-router adapter shipped, and deterministic guard live |
+| Evidence-gated optimization platform | Repeatable benchmarks, recovery testing, and profile canaries in production |
 
 Until the corresponding controls are implemented and validated, do not claim enterprise governance, enforced sandbox isolation, crash-proof orchestration, production-grade self-improvement, or proven cost optimization.
 
@@ -91,16 +123,24 @@ Until the corresponding controls are implemented and validated, do not claim ent
 
 agent-synthetix sits above or alongside existing market layers rather than replacing them.
 
-| Market layer | Representative leaders | Their center of gravity | AutoClaw relationship |
-|---|---|---|---|
-| Agent runtimes | OpenAI, Microsoft, Google | Models, SDKs, tools, sandboxes, deployment | Integrate their agents through adapters |
-| Agent workflow frameworks | LangGraph, CrewAI | Graph/crew execution, persistence, tracing | Treat their workflows as fleet participants |
-| Business automation | UiPath, n8n, Salesforce | Connectors, enterprise processes, governance | Stay focused on software workspaces |
-| Persistent agent memory | Letta | Stateful agents and self-editing memory | Govern team-level routing and improvement |
-| Coding-agent execution | Codex, Claude Code, GitHub Copilot, Cursor | Task and code execution | Coordinate them as workers |
-| Durable execution | Temporal and managed workflow engines | Crash recovery and long-running workflows | Remain compatible; optionally use as a backend |
+| Market layer | What it provides | AutoClaw relationship |
+|---|---|---|
+| Agent runtimes | Models, SDKs, tools, sandboxes, deployment | Integrate their agents through adapters |
+| Agent workflow frameworks | Application-level graphs, crews, persistence, and tracing | Treat their workflows as fleet participants |
+| Business automation | Connectors, enterprise processes, and governance | Stay focused on software workspaces |
+| Persistent agent memory | Stateful agents and self-editing memory | Govern team-level routing and improvement |
+| Coding-agent execution | Task and code execution | Coordinate those agents as workers |
+| Durable execution | Crash recovery and long-running workflows | Remain compatible; optionally use as a backend |
 
-### 4.1 Competitive boundaries
+### 4.1 Public competitive framing
+
+Public copy stays at the category level:
+
+> **Agent runtimes give you a worker. Workflow frameworks give you an app. agent-synthetix coordinates whichever agents and frameworks you already use, inside the repository you already have.**
+
+Named comparisons belong in internal battlecards, sales conversations, and investor material. They should not appear in the README, website, or public positioning collateral because they age quickly and distract from the product’s own proof.
+
+### 4.2 Competitive boundaries
 
 agent-synthetix should not compete on:
 
@@ -615,7 +655,7 @@ File-native state alone is not a durable moat. Defensibility should come from:
 
 ## 21. Immediate next actions
 
-1. Approve or revise the control-plane positioning and initial ICP.
+1. Apply the accepted collision-first positioning consistently across public product surfaces.
 2. Write the Phase 0 execution-authority ADR.
 3. Define verified completion and select benchmark tasks.
 4. Correct current stale-state and documentation contradictions.
@@ -623,18 +663,11 @@ File-native state alone is not a durable moat. Defensibility should come from:
 6. Define the minimum agent, assignment, event, evidence, and outcome schemas.
 7. Implement one dual-router vertical slice before expanding coalition or evolution scope.
 
-## 22. Market references
+## 22. Positioning governance
 
-The market assessment should be refreshed periodically because the category changes quickly.
-
-- [OpenAI Agents SDK](https://openai.com/index/the-next-evolution-of-the-agents-sdk/)
-- [LangGraph](https://www.langchain.com/langgraph)
-- [Microsoft Agent Framework](https://devblogs.microsoft.com/foundry/introducing-microsoft-agent-framework-the-open-source-engine-for-agentic-ai-apps/)
-- [Google ADK evaluation](https://google.github.io/agents-cli/guide/evaluation/)
-- [Google Agents CLI](https://google.github.io/agents-cli/cli/)
-- [CrewAI](https://crewai.com/)
-- [Letta](https://docs.letta.com/guides/get-started/intro)
-- [UiPath Maestro](https://www.uipath.com/platform/agentic-automation/business-orchestration)
-- [n8n AI Agents](https://n8n.io/ai-agents/)
-- [Temporal documentation](https://docs.temporal.io/)
-- [GitHub custom agents](https://docs.github.com/en/copilot/how-tos/copilot-sdk/features/custom-agents)
+- Lead public copy with collision-free parallel work.
+- Keep shipped capabilities separate from roadmap capabilities.
+- Keep named competitive comparisons in internal battlecards only.
+- Do not lead with performance intelligence or governed evolution until their graduation criteria are met.
+- Use **Coordinate → Verify → Improve** as the maturity narrative; state explicitly which stages are live.
+- Graduate preview labels only when their underlying proof is reproducible.
