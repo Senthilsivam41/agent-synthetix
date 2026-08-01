@@ -1,0 +1,6 @@
+tasks:
+  - id: stalled-worker
+    write_scopes: ["console/src/**"]
+    agent_id: expiring-worker
+    reviewer_agent_id: reviewer
+    acceptance_criteria: ["Expired execution is failed and its evidence is retained"]

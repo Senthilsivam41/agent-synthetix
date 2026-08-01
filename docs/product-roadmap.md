@@ -214,10 +214,10 @@ Every roadmap phase must preserve these invariants:
 
 | Phase | Outcome | Status | Dependency |
 |---|---|---|---|
-| 0 | Product baseline and authoritative execution model | Next | Current architecture |
-| 1 | Canonical contracts and trustworthy execution evidence | Planned | Phase 0 |
-| 2 | Dual-router completes and verifies a real task through AutoClaw | Planned | Phase 1 |
-| 3 | Invalid, stale, or unsafe transitions are blocked | Planned | Phases 1–2 |
+| 0 | Product baseline and authoritative execution model | Implemented — research preview | Current architecture |
+| 1 | Canonical contracts and trustworthy execution evidence | Implemented — research preview | Phase 0 |
+| 2 | Dual-router completes and verifies a real task through AutoClaw | Adapter + mock conformance implemented; live credentialed smoke pending | Phase 1 |
+| 3 | Invalid, stale, or unsafe transitions are blocked | Implemented for kernel-managed executions | Phases 1–2 |
 | 4 | Temporary multi-agent coalitions work within strict boundaries | Conditional | Phase 3 |
 | 5 | Agent profiles improve through controlled evaluation | Conditional | Phases 1–4 plus sufficient data |
 | 6 | Resource use is bounded predictably | Conditional | Trustworthy telemetry and guard |

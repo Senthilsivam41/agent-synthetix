@@ -5,12 +5,14 @@ Prioritized backlog for Orchestrate console + soft-gate productization. The stra
 
 ## P0 — Product foundation
 
-- Decide and document execution authority for operational state transitions
-- Define verified completion and select representative benchmark tasks
-- Add canonical agent, assignment, event, evidence, and outcome contracts
-- Establish contract/conformance tests and state-freshness rules
-- Implement the dual-router adapter as the first end-to-end vertical slice
-- Add deterministic contract guarding before dynamic coalitions
+- [x] Decide and document execution authority for operational state transitions
+- [x] Define verified completion and add representative collision fixtures
+- [x] Add canonical agent, assignment, event, evidence, review, finding, and outcome contracts
+- [x] Establish initial contract/conformance tests and state-freshness rules
+- [x] Implement the dual-router subprocess adapter and mock vertical slice
+- [x] Add deterministic contract guarding before dynamic coalitions
+- [ ] Run the live dual-router smoke test when credentials are explicitly available
+- [ ] Expand the minimal schema representation into generated, strict JSON Schema validation
 
 ## P1 — Console screens
 

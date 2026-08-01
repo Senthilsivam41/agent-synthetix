@@ -1,17 +1,23 @@
 # How to run agent-synthetix locally
 
-## Important: there is no terminal CLI
+## Two local interfaces
 
-Commands like `/orchestrate init` are **not shell commands**.  
-Typing them in a terminal will always fail (`command not found`).
+Commands like `/orchestrate init` are **agent-chat commands**, not shell commands. Typing `orchestrate init` in a terminal still fails. For kernel-enforced execution, the console package now provides a separate headless command.
 
-This repo has:
+The compatibility runtime is an AI agent chat that reads [`.agent/rules/`](../.agent/rules/) and writes gitignored state under `.autoclaw/`. The authoritative execution kernel lives in [`console/`](../console/) and uses SQLite WAL, Git worktrees, scope leases, evidence gates, and independent review.
 
-- no `package.json`
-- no binary / npm script
-- no server to start
+## Run the enforced control plane
 
-The “runtime” is an **AI agent chat** that reads [`.agent/rules/`](../.agent/rules/) and writes state under `.autoclaw/` (gitignored).
+Node 22.13 or newer is required.
+
+```bash
+cd console
+npm install
+npm run control-plane -- init --workspace ..
+npm run dev
+```
+
+Open `http://localhost:5173`. Keep the console localhost-only. See the [control-plane guide](./control-plane.md) for registration, planning, execution, and review commands.
 
 ---
 
@@ -54,7 +60,8 @@ create .autoclaw/orchestrator/config.yaml plus manifests/, sprints/, reviews/, a
 | You typed in | Result |
 |---|---|
 | Terminal: `orchestrate init` | Fails — expected |
-| Agent chat: `/orchestrate init` | Creates `.autoclaw/orchestrator/...` |
+| Agent chat: `/orchestrate init` | Creates advisory compatibility state |
+| Terminal in `console/`: `npm run control-plane -- init --workspace ..` | Initializes the authoritative local store |
 | `git status` after init | Usually clean — `.autoclaw/` is gitignored |
 
 ---
@@ -65,7 +72,7 @@ Same idea in Claude Code, Windsurf, Copilot Chat, etc.: send the command as a **
 
 ---
 
-## Next commands (always in agent chat)
+## Next compatibility commands (in agent chat)
 
 ```text
 /orchestrate plan

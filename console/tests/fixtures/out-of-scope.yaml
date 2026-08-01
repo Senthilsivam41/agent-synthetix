@@ -1,0 +1,6 @@
+tasks:
+  - id: scoped-source
+    write_scopes: ["console/src/**"]
+    agent_id: worker-a
+    reviewer_agent_id: reviewer
+    acceptance_criteria: ["An undeclared docs change must fail before review"]

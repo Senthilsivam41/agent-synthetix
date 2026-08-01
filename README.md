@@ -1,16 +1,20 @@
 # agent-synthetix
 
-> **A self-hosted, multi-agent AI operating system** — autonomous research, content creation, code authoring, and continuous self-improvement — coordinated by a file-native agent layer that survives reboots, survives switching AI tools, and requires no hidden server.
+> **Parallel agent work without parallel-agent collisions.**
 
-**Docs:** [How to run locally](./docs/how-to-run.md) · [Architecture principles](./docs/architecture-principles.md) · [`.autoclaw` / KDream check-in policy](./docs/autoclaw-and-kdream.md) · [Docs index](./docs/README.md) · [Open design questions](./BRAINSTORM.md)
+agent-synthetix is a workspace-native agent control plane for the coding agents you already run. It coordinates scoped work across IDEs, CLIs, and model providers, and requires evidence before an execution can be accepted.
 
-> **Slash-commands are not a terminal CLI.** Type `/orchestrate init` in **Cursor Agent chat**, not in the shell. See [docs/how-to-run.md](./docs/how-to-run.md).
+**Open-source research preview.** Run every coding agent as one coordinated fleet—without collisions, and with proof.
+
+**Docs:** [Control-plane quick start](./docs/control-plane.md) · [How to run locally](./docs/how-to-run.md) · [Architecture principles](./docs/architecture-principles.md) · [`.autoclaw` / KDream check-in policy](./docs/autoclaw-and-kdream.md) · [Docs index](./docs/README.md)
+
+> Slash-commands are entered in an agent chat. The separate `npm run control-plane -- …` command is the kernel-managed headless interface. Both paths remain available, but only the kernel-managed path provides collision and evidence guarantees.
 
 ---
 
 ## What This Is
 
-`agent-synthetix` is not a single AI assistant. It is a **fleet of specialized AI agents** sharing one workspace, one memory store, and one coordination bus — all through plain files under `.autoclaw/`.
+`agent-synthetix` is not another agent framework or agent OS. Keep Codex, Claude Code, Copilot, Cursor, or custom agents; standardize how they share a repository.
 
 The system orchestrates agents from any IDE or CLI (Claude Code, Kiro, Cursor, Antigravity, Windsurf, Copilot) and lets them collaborate on the same repo without colliding. Each agent knows its role, its scope, and its peers.
 
@@ -19,9 +23,10 @@ The system orchestrates agents from any IDE or CLI (Claude Code, Kiro, Cursor, A
 | Layer | What it is |
 |---|---|
 | **Instruction set** | `.agent/rules/*.md` — host-agnostic specs the AI agent executes |
-| **Runtime** | The host AI agent (you / Cursor / Claude Code / …) running slash-commands |
-| **State** | `.autoclaw/` — gitignored runtime (do not check in); file-native board, memory, vector store, inboxes — see [check-in policy](./docs/autoclaw-and-kdream.md) |
-| **No app binary required here** | This repo is Markdown + rules; there is no package.json or server to start |
+| **Workers** | Host AI agents perform reasoning and implementation in isolated worktrees |
+| **Authority** | `console/plugins/control-plane/` owns identities, leases, transitions, evidence, and reviews |
+| **State** | SQLite WAL under gitignored `.autoclaw/`; files are audit exports and compatibility views |
+| **Interfaces** | Local Vite console and headless console-package command call the same kernel |
 
 Full design detail — principles, DAG algorithm, message bus, store separation, and lifecycle — lives in **[docs/architecture-principles.md](./docs/architecture-principles.md)**.
 
@@ -79,7 +84,7 @@ Reads task manifests, builds a dependency DAG, generates sprint plans, and assig
 
 Recommended path: drop inputs → intake → ask → propose → review MD → approve → plan. Soft gate: `/orchestrate plan` still accepts hand-written manifests without an approved project plan.
 
-Sprint planner uses: topological sort (Kahn), bin-packing, scope-conflict detection, capability-aware routing, and migration range allocation. **Scope isolation is enforced** — no two parallel agents share file patterns.
+The kernel planner uses Kahn topological sorting and conservative scope-conflict detection. It acquires leases transactionally, gives every execution a dedicated Git worktree and branch, and validates the resulting diff before review. Broad or ambiguous scope pairs fail closed.
 
 See [Architecture Principles §5.1](./docs/architecture-principles.md#51-orchestrate--sprint-dag-planner) for the full plan algorithm.
 
@@ -265,9 +270,9 @@ docs/                          ← architecture principles & documentation index
 
 | Principle | Implementation |
 |---|---|
-| **Local-first** | All state in `.autoclaw/` files — no hidden server, no cloud dependency |
+| **Local-first** | Authoritative SQLite and audit files live under `.autoclaw/` — no hosted control plane required |
 | **Tool-agnostic** | Works with: Antigravity, Claude Code, Kiro, Cursor, Copilot, Windsurf |
-| **Transparent** | Every action logged; all state is human-readable files |
+| **Transparent** | Every accepted event and execution artifact has an inspectable export or projection |
 | **Safe by default** | Human approval gates, scope isolation, guarded fix mode with rollback |
 | **Consent-first** | Third-party session ingestion is opt-in; secrets/PII redacted before embedding |
 | **Idempotent** | All commands are safe to re-run; no duplicate state |
@@ -294,16 +299,16 @@ Hermes profiles are personality definitions loaded via `.agent/rules/`. Current 
 
 ---
 
-## Acceptance Criteria
+## Research-preview proof boundary
 
-- [ ] User gives a topic → agents research, summarize, generate content autonomously
-- [ ] System spawns and coordinates multiple Hermes agents via sprint DAG
-- [ ] All execution steps logged and human-reviewable
-- [ ] Human can stop, modify, or approve at any checkpoint
-- [ ] Stalled agents detected and revived automatically
-- [ ] Memory persists across tool switches and reboots
-- [ ] No two parallel agents write the same file scope
-- [ ] Security findings require unanimous consensus before merge
+- [x] Kernel-managed assignments acquire non-overlapping transactional scope leases.
+- [x] Each execution runs in a dedicated Git worktree and branch.
+- [x] Out-of-scope changes fail before review.
+- [x] Required gates and artifact provenance are persisted.
+- [x] Acceptance requires a different registered agent and session.
+- [x] Console and headless command use the same SQLite authority.
+- [ ] Live dual-router smoke requires explicitly supplied model credentials.
+- [ ] Performance intelligence and governed profile evolution remain roadmap capabilities.
 
 ---
 
@@ -312,6 +317,7 @@ Hermes profiles are personality definitions loaded via `.agent/rules/`. Current 
 | Doc | Contents |
 |---|---|
 | [docs/how-to-run.md](./docs/how-to-run.md) | Run slash-commands in agent chat (not the terminal) |
+| [docs/control-plane.md](./docs/control-plane.md) | Run the kernel-managed console/headless control plane |
 | [docs/architecture-principles.md](./docs/architecture-principles.md) | Design principles, subsystem contracts, end-to-end lifecycle, verification |
 | [docs/autoclaw-and-kdream.md](./docs/autoclaw-and-kdream.md) | Why `.autoclaw/` / KDream exist; do not check them into git |
 | [docs/README.md](./docs/README.md) | Documentation index |

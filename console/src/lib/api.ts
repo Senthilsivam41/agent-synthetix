@@ -1,4 +1,17 @@
 export type IntakeFile = { name: string; type: string };
+export type ControlPlaneStatus = {
+  schema_version: string;
+  authoritative_store: string;
+  guard_mode: "report" | "warn" | "enforce";
+  updated_at: string;
+  assignments: Array<{ assignment_id: string; task_id: string; title: string; write_scopes: string[]; dependencies: string[]; status: string }>;
+  executions: Array<{ execution_id: string; assignment_id: string; state: string; worktree_path: string | null; branch_name: string | null; updated_at: string }>;
+  leases: Array<{ lease_id: string; execution_id: string; scope: string; expires_at: string }>;
+  reviews: Array<{ review_id: string; execution_id: string; status: string }>;
+  evidence: Array<{ evidence_id: string; execution_id: string; scope_passed: boolean; changed_files: string[]; out_of_scope_files: string[]; gates: Array<{ name: string; passed: boolean; required: boolean }> }>;
+  freshness: { latest_event_at: string | null; stale_execution_ids: string[] };
+  findings: Array<{ finding_id: string; severity: string; category: string; message: string; created_at: string }>;
+};
 
 async function json<T>(resPromise: Promise<Response>): Promise<T> {
   const res = await resPromise;
@@ -10,6 +23,7 @@ async function json<T>(resPromise: Promise<Response>): Promise<T> {
 }
 
 export const api = {
+  controlPlaneStatus: () => json<ControlPlaneStatus>(fetch("/api/orchestrator/v1/status")),
   status: () =>
     json<{ path: string; text: string }>(fetch("/api/orchestrator/status")),
 

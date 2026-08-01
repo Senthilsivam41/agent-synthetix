@@ -1,0 +1,15 @@
+tasks:
+  - id: router-vertical-slice
+    title: Dual-router execution with independent review
+    goal: Add a scoped documentation artifact
+    write_scopes: ["docs/examples/dual-router-result.md"]
+    read_scopes: ["docs/**"]
+    agent_id: dual-router
+    reviewer_agent_id: independent-reviewer
+    gates:
+      - name: artifact-exists
+        command: test -f docs/examples/dual-router-result.md
+        required: true
+    acceptance_criteria:
+      - Required gate passes
+      - A different agent and session approve the recorded evidence

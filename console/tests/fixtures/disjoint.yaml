@@ -1,0 +1,11 @@
+tasks:
+  - id: frontend
+    title: Frontend change
+    write_scopes: ["console/src/**"]
+    agent_id: worker-a
+    reviewer_agent_id: reviewer
+  - id: docs
+    title: Documentation change
+    write_scopes: ["docs/**"]
+    agent_id: worker-b
+    reviewer_agent_id: reviewer
