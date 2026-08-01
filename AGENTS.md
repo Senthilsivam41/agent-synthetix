@@ -25,3 +25,5 @@ Other subsystems (`/learn`, `/index-code`, `/kdream start`, `/autobuild`, `/mate
 - Commands must be **idempotent** — re-running `init`/`plan` updates state in place rather than duplicating it.
 - The rule files reference an aspirational TypeScript/VS Code-extension implementation (`src/...`, `package.json`, MCP tools) that **does not exist in this repo**. Treat those as future/spec references, not runnable code.
 - Orchestrate console UI (Vite) lives under `console/` — optional; core product still runs via slash-commands + `.autoclaw/` files. Verification of orchestration still means inspecting generated files under `.autoclaw/` (e.g. valid DAG levels + no overlapping scopes).
+- **Project memory:** read/update [`memory/STATUS.md`](./memory/STATUS.md) and [`memory/FUTURE.md`](./memory/FUTURE.md) around milestones. Standing rules: [`memory/AGENT-CONVENTIONS.md`](./memory/AGENT-CONVENTIONS.md).
+- **Codegraph:** when `.codegraph/` exists, use `codegraph_explore` to find files/symbols — do not full-repo Grep/Glob. After major implementation, re-index (`codegraph init` once, then `codegraph sync` or `codegraph index`).
