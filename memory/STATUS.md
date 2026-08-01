@@ -28,6 +28,9 @@ Present in `.agent/rules/orchestrate.md`:
 ## Product strategy
 
 - `docs/product-roadmap.md` — workspace-native agent control-plane positioning
+- Accepted hero: “Parallel agent work without parallel-agent collisions.”
+- Public one-line summary: “Run every coding agent as one coordinated fleet—without collisions, and with proof.”
+- Public competitive copy stays category-level; named comparisons are internal-only
 - Primary sequence: execution authority → contracts/telemetry → dual-router adapter → contract guard
 - Coalitions, profile evolution, budgets, and an economy remain gated or conditional
 - North Star: weekly verified agent tasks completed without human repair
