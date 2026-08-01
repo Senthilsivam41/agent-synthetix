@@ -1,16 +1,25 @@
 # Future changes
 
 **Updated:** 2026-08-01  
-Prioritized backlog for Orchestrate console + soft-gate productization.
+Prioritized backlog for Orchestrate console + soft-gate productization. The strategic sequence and phase gates are defined in [Product Roadmap](../docs/product-roadmap.md); this file tracks the nearer-term implementation backlog.
 
-## P0 — Console screens
+## P0 — Product foundation
+
+- Decide and document execution authority for operational state transitions
+- Define verified completion and select representative benchmark tasks
+- Add canonical agent, assignment, event, evidence, and outcome contracts
+- Establish contract/conformance tests and state-freshness rules
+- Implement the dual-router adapter as the first end-to-end vertical slice
+- Add deterministic contract guarding before dynamic coalitions
+
+## P1 — Console screens
 
 1. **Clarify** — load/save `plans/clarifications.md`; queue `/orchestrate ask`; answer form (max 1–5 Qs)
 2. **Plan Review** — render `plans/project-plan.md`; queue `/orchestrate propose` / `revise`
 3. **Approve** — consequence panel; queue `/orchestrate approve`; reflect `approved` → `manifested`
 4. **Sprints** — list `sprints/sprint-*.yaml`; soft-gate banner; revive enqueue
 
-## P1 — Console platform
+## P2 — Console platform
 
 - Poll/watch `.autoclaw/` so board refreshes without reload
 - Command outbox UI: show pending/processed queue; “copy slash-cmd” helper
@@ -19,17 +28,20 @@ Prioritized backlog for Orchestrate console + soft-gate productization.
 - A11y pass per `docs/ux/orchestrate-console.md` (focus, reduced motion, dropzone picker)
 - Light theme tokens (`data-theme="light"`)
 
-## P2 — Agent / contract
+## P3 — Agent / contract
 
 - Keep `.agent/rules/orchestrate.md` and `~/.claude/skills/orchestrate` in sync when rules change
 - Optional: small runner that drains `pending.jsonl` without human paste
 - Ensure `init` always creates `intake/` `plans/` `commands/` stubs
 
-## P3 — Broader AutoClaw (out of console MVP)
+## P4 — Broader AutoClaw (out of console MVP)
 
 - Hermes approval UX (BRAINSTORM §3)
 - GitHub Pages content site (BRAINSTORM §5)
 - Ops dashboard (metrics, KG, inboxes, KDream) — separate from Orchestrate console
+- Bounded coalitions — only after deterministic guard validation
+- Controlled profile evolution — only after sufficient task-family evidence
+- Hard budgets before any internal bidding/economy experiment
 
 ## Process (always)
 
