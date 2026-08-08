@@ -284,13 +284,13 @@ Expanded rationale and invariants: [docs/architecture-principles.md](./docs/arch
 
 ## Hermes Profiles (Specialized Agent Personalities)
 
-**Content Hermes** (research / blog / thread / report) is a host-agnostic instruction set under `.agent/rules/hermes/` — local host agent today, OpenClaw hosted runner later ([layers diagram](./docs/hermes-vs-openclaw-layers.svg)). Phase 1: `/hermes init` → `/hermes research <topic>` writes memos + semantic diffs under `.autoclaw/hermes/`. Plan: [docs/architecture-plan-phases.md](./docs/architecture-plan-phases.md).
+**Content Hermes** (research / blog / thread / report) is a host-agnostic instruction set under `.agent/rules/hermes/` — local host agent today, OpenClaw hosted runner later ([layers diagram](./docs/hermes-vs-openclaw-layers.svg)). Phase 1: `/hermes research` → memos under `.autoclaw/hermes/`. Phase 2: `/hermes preview` → `approve` → `publish` stages [site/](./site/) → merge to `content` deploys Pages. Plan: [docs/architecture-plan-phases.md](./docs/architecture-plan-phases.md).
 
 Other subsystem personalities (same “profile” metaphor, separate rules):
 
 | Profile | Trigger | Specialty |
 |---|---|---|
-| **Hermes (content)** | `/hermes`, `ResearchHermes` | Research memos + bullet semantic diff (Phases 0–1 shipped as rules) |
+| **Hermes (content)** | `/hermes`, `ResearchHermes` | Research memos, semantic diff, approve/preview/publish + Jekyll Pages (Phases 0–2) |
 | **Orchestrate** | `/orchestrate`, `plan sprints` | DAG-based sprint planning and agent coordination |
 | **MAteam** | `/mateam launch`, `spawn agents` | Researcher → Coder → Reviewer → Verifier pipeline |
 | **KDream** | `/kdream start`, `persistent daemon` | Background memory and follow-up daemon |

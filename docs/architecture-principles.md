@@ -110,7 +110,7 @@ verbosity: terse | standard | expansive
 audience: internal_team | public | client
 ```
 
-Runtime (gitignored): `.autoclaw/hermes/` — research memos, `sources.json`, later `pending/` / `approved/`. Vector + KG stay local until OpenClaw Phase 7. Spec: [architecture-plan-phases.md](./architecture-plan-phases.md), contracts: [schemas/hermes-research.md](../schemas/hermes-research.md).
+Runtime (gitignored): `.autoclaw/hermes/` — research memos, `sources.json`, `pending/` / `approved/` / `preview/`. Committed Jekyll tree: `site/` (staged by `/hermes publish`). Deploy: Actions on branch `content`. Vector + KG stay local until OpenClaw Phase 7. Spec: [architecture-plan-phases.md](./architecture-plan-phases.md); contracts: [schemas/hermes-research.md](../schemas/hermes-research.md), [schemas/hermes-publish.md](../schemas/hermes-publish.md).
 
 ---
 
@@ -368,7 +368,7 @@ Keep new surfaces **file-shaped** and **idempotent**. Prefer Markdown/YAML/JSON 
 - Blind overwrite of MEMORY.md, preferences, or consensus history  
 - Parallel agents sharing the same write scope without an explicit merge order  
 
-Hermes profile format + ResearchHermes diff engine are decided (Phases 0–1). Remaining open product questions (approval UX, issue sync, Pages, `/learn` paths, hosted migration, self-host DAG) live in [BRAINSTORM.md](../BRAINSTORM.md) — do not claim them as shipped until reflected in rules + README.
+Hermes Phases 0–2 are decided (profiles, ResearchHermes diff, approve/preview/publish + Jekyll Pages). Remaining open product questions (issue sync, `/learn` paths, hosted migration, self-host DAG) live in [BRAINSTORM.md](../BRAINSTORM.md) — do not claim them as shipped until reflected in rules + README.
 
 ---
 

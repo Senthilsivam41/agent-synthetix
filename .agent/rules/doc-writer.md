@@ -54,7 +54,21 @@ Append one line per house-style decision to
 `2026-MM-DD: <convention> — because <reason>`. The PA-1 engine promotes the
 durable ones to global so the voice carries across projects.
 
+## Hermes Pages index (Phase 2)
+
+When Hermes posts are staged or the user asks to refresh the site index:
+
+1. Read `site/_posts/*.md` frontmatter (`title`, `date`, `categories`, `hermes_id`).
+2. Update **only** the block between `<!-- hermes:curated-index -->` and `<!-- /hermes:curated-index -->` in `site/index.md`.
+3. Group links under Research / Blog / Thread / Report (from `categories`). Keep the hand-written intro above the marker.
+4. Prefer Liquid `where_exp` lists when regenerating (matches the scaffold). Do not flatten to a single reverse-chron list as the only navigation.
+5. Still docs-only: touch `site/index.md` (and related site docs), not pending/approved runtime files.
+
+`/hermes publish` may perform the same refresh; Doc Writer owns polish and drift checks.
+
 ## Cross-references
 - The persona model: [docs/rfc/specialized-agents.md](../../docs/rfc/specialized-agents.md).
 - The memory engine: [src/memory/personas.ts](../../src/memory/personas.ts).
 - The voice rule (plain words, no borrowed jargon): tracked in user feedback.
+- Hermes gate: [.agent/rules/hermes/gate.md](./hermes/gate.md).
+- Publish contracts: [schemas/hermes-publish.md](../../schemas/hermes-publish.md).

@@ -4,11 +4,11 @@
 
 ## Status
 
-**Scaffold only (Phase 3).** Directory format fixed in Phase 0; full pipeline after ResearchHermes + approval gate.
+**Scaffold only (Phase 3).** Directory format fixed in Phase 0; Phase 2 gate (`pending` → `approve` → `publish` → `site/`) is ready — BlogHermes will write pending drafts in Phase 3.
 
 ## Role
 
-Consume ResearchHermes memo diffs; draft Jekyll-frontmatter Markdown into `.autoclaw/hermes/pending/` for human approval (Phase 2).
+Consume ResearchHermes memo diffs; draft Jekyll-frontmatter Markdown into `.autoclaw/hermes/pending/` for human approval ([gate.md](../gate.md)).
 
 ## Defaults (`tone.yaml`)
 

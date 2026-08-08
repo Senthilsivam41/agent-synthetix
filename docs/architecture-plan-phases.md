@@ -133,11 +133,13 @@ Orchestrate's soft-gate approval is already decided (frontmatter `approved: true
 - Two-checkpoint approval (local + PR) is more friction than a single approve step, but matches the "human approval gates" non-functional principle already in the README and gives you a real diff-reviewable artifact (the PR) before anything goes public.
 
 ### Action Items
-- [ ] Implement `/hermes approve <id>` + frontmatter equivalence check
-- [ ] Implement `/hermes preview <id>`
-- [ ] Scaffold Jekyll `_posts/` structure + `_config.yml`
-- [ ] `.github/workflows/pages.yml` deploy-on-merge
-- [ ] Doc Writer: generate curated index page per Hermes profile
+- [x] Implement `/hermes approve <id>` + frontmatter equivalence check — [hermes/gate.md](../.agent/rules/hermes/gate.md)
+- [x] Implement `/hermes preview <id>` — preview HTML under `.autoclaw/hermes/preview/`
+- [x] Scaffold Jekyll `_posts/` structure + `_config.yml` — committed [`site/`](../site/)
+- [x] `.github/workflows/pages.yml` deploy-on-merge — push to `content` branch
+- [x] Doc Writer: generate curated index page per Hermes profile — `site/index.md` markers + doc-writer rule
+
+**Phase 2 ship note (2026-08-08):** Agent-executable gate + Jekyll site + Actions workflow landed. Enable GitHub Pages (Actions source) and merge `site/**` to `content` for the first live deploy. BlogHermes (Phase 3) will write pending drafts automatically; until then use `/hermes queue` or hand-authored pending files.
 
 ---
 

@@ -1,0 +1,15 @@
+# AutoClaw Hermes site
+
+title: AutoClaw Hermes
+description: Research, blog, thread, and report notes from Hermes profiles.
+baseurl: ""
+url: ""
+
+markdown: kramdown
+highlighter: rouge
+permalink: /:categories/:year/:month/:day/:title/
+
+plugins: []
+
+exclude:
+  - README.md
