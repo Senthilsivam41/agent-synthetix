@@ -1,7 +1,7 @@
 # Future changes
 
-**Updated:** 2026-08-01  
-Prioritized backlog for Orchestrate console + soft-gate productization. The strategic sequence and phase gates are defined in [Product Roadmap](../docs/product-roadmap.md); this file tracks the nearer-term implementation backlog.
+**Updated:** 2026-08-08  
+Prioritized backlog for Orchestrate console + soft-gate productization. Control-plane sequence: [Product Roadmap](../docs/product-roadmap.md). Hermes content sequence: [Architecture plan phases](../docs/architecture-plan-phases.md).
 
 ## P0 — Product foundation
 
@@ -36,10 +36,19 @@ Prioritized backlog for Orchestrate console + soft-gate productization. The stra
 - Optional: small runner that drains `pending.jsonl` without human paste
 - Ensure `init` always creates `intake/` `plans/` `commands/` stubs
 
-## P4 — Broader AutoClaw (out of console MVP)
+## P4 — Hermes content (architecture plan)
 
-- Hermes approval UX (BRAINSTORM §3)
-- GitHub Pages content site (BRAINSTORM §5)
+- [x] Phase 0 — directory profiles + tone/platforms
+- [x] Phase 1 — ResearchHermes + semantic/lexical diff + sources.json
+- [ ] Phase 2 — `/hermes approve` + preview + Jekyll Pages
+- [ ] Phase 3 — BlogHermes from research diffs
+- [ ] Phase 4 — `/learn` multi-tool paths
+- [ ] Phase 5 — Linear/GitHub Issues → manifest sync
+- [ ] Phase 6 — ThreadHermes + ReportHermes
+- [ ] Phase 7 — OpenClaw hosted runner + Postgres migration for vector/KG
+
+## P5 — Broader AutoClaw (out of console MVP)
+
 - Ops dashboard (metrics, KG, inboxes, KDream) — separate from Orchestrate console
 - Bounded coalitions — only after deterministic guard validation
 - Controlled profile evolution — only after sufficient task-family evidence

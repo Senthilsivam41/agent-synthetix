@@ -1,0 +1,10 @@
+platforms:
+  x:
+    max_chars: 280
+    thread_style: numbered
+  linkedin:
+    max_chars: 3000
+    thread_style: single_post
+  bluesky:
+    max_chars: 300
+    thread_style: numbered
