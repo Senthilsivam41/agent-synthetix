@@ -8,10 +8,11 @@ Decisions made → captured in README.md. These are the **open unknowns** needin
 
 **Decision made:** Dedicated profiles (BlogHermes, ThreadHermes, ReportHermes, ResearchHermes).
 
-**Still open:**
-- Should each profile be a single `.agent/rules/<name>.md` file, or a directory with prompt templates, examples, and tone config?
-- How does tone customization work? (e.g. BlogHermes = technical vs casual)
-- Should ThreadHermes know the target platform? (Twitter/X vs LinkedIn vs Bluesky have different length limits)
+**Accepted (Phase 0 — see [docs/architecture-plan-phases.md](./docs/architecture-plan-phases.md)):**
+- **Directory-per-profile** under `.agent/rules/hermes/<profile>/` with `profile.md` + `prompt.md` + `tone.yaml` + `examples/` (ThreadHermes also has `platforms.yaml`)
+- Entry rule: `.agent/rules/hermes.md` (`/hermes init|research|…`)
+- Tone via `tone.yaml`: `formality` / `voice` / `verbosity` / `audience`
+- ThreadHermes is platform-aware (`x` / `linkedin` / `bluesky`); `--platform` arg, default from `.autoclaw/hermes/config.yaml` `primary_platform`
 
 ---
 
@@ -19,11 +20,12 @@ Decisions made → captured in README.md. These are the **open unknowns** needin
 
 **Decision made:** Diff mode — compare yesterday's memo vs today, surface `[NEW]`/`[CHANGED]`/`[REMOVED]`.
 
-**Still open:**
-- What counts as "same topic"? Exact slug match, or semantic similarity?
-- How is the diff computed? Line-level git diff, or semantic similarity between bullet points?
-- What if there's no yesterday memo? Run full research, no diff. Confirm?
-- Where do source URLs get tracked? (to detect same URL vs new source)
+**Accepted (Phase 1 — executable in [`.agent/rules/hermes/research/profile.md`](./.agent/rules/hermes/research/profile.md)):**
+- **Same topic:** slug match first; semantic fallback (embedding cosine ~0.85) for unmatched titles
+- **Diff:** bullet-level semantic similarity (reuse vector store); lexical fallback → `diff_mode: lexical`
+- **No prior memo:** full research, `baseline: true`
+- **Sources:** `.autoclaw/hermes/research/sources.json` keyed by normalized URL
+- Contracts: [schemas/hermes-research.md](./schemas/hermes-research.md)
 
 ---
 

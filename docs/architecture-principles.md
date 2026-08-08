@@ -89,6 +89,29 @@ Do not conflate stores. Each has one job:
 
 Each Hermes profile / rule file owns a narrow surface. Cross-cutting concerns (inbox check, scope enforcement, consensus) live in the Cross-Agent protocol and are always active.
 
+### 3.9 Hermes profiles (content)
+
+Hermes is a **host-agnostic instruction set** (not a hosted runner). Profiles use directory-per-profile layout under `.agent/rules/hermes/<profile>/`:
+
+| File | Role |
+|---|---|
+| `profile.md` | Persona, algorithms, slash-command behavior (loaded by host) |
+| `prompt.md` | Templated prompt with `{{variables}}` |
+| `tone.yaml` | `formality` / `voice` / `verbosity` / `audience` |
+| `examples/` | Few-shot samples |
+| `platforms.yaml` | ThreadHermes only — per-platform char limits |
+
+`tone.yaml` enums:
+
+```yaml
+formality: technical | casual | executive
+voice: first_person | third_person
+verbosity: terse | standard | expansive
+audience: internal_team | public | client
+```
+
+Runtime (gitignored): `.autoclaw/hermes/` — research memos, `sources.json`, later `pending/` / `approved/`. Vector + KG stay local until OpenClaw Phase 7. Spec: [architecture-plan-phases.md](./architecture-plan-phases.md), contracts: [schemas/hermes-research.md](../schemas/hermes-research.md).
+
 ---
 
 ## 4. System Architecture
@@ -345,7 +368,7 @@ Keep new surfaces **file-shaped** and **idempotent**. Prefer Markdown/YAML/JSON 
 - Blind overwrite of MEMORY.md, preferences, or consensus history  
 - Parallel agents sharing the same write scope without an explicit merge order  
 
-Open product questions (Hermes content profiles, research diff engine, approval UX, issue sync, Pages publishing, hosted migration) live in [BRAINSTORM.md](../BRAINSTORM.md) and are **not** claimed as implemented until decided and reflected in rules + README.
+Hermes profile format + ResearchHermes diff engine are decided (Phases 0–1). Remaining open product questions (approval UX, issue sync, Pages, `/learn` paths, hosted migration, self-host DAG) live in [BRAINSTORM.md](../BRAINSTORM.md) — do not claim them as shipped until reflected in rules + README.
 
 ---
 

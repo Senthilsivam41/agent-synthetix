@@ -284,10 +284,13 @@ Expanded rationale and invariants: [docs/architecture-principles.md](./docs/arch
 
 ## Hermes Profiles (Specialized Agent Personalities)
 
-Hermes profiles are personality definitions loaded via `.agent/rules/`. Current profiles:
+**Content Hermes** (research / blog / thread / report) is a host-agnostic instruction set under `.agent/rules/hermes/` — local host agent today, OpenClaw hosted runner later ([layers diagram](./docs/hermes-vs-openclaw-layers.svg)). Phase 1: `/hermes init` → `/hermes research <topic>` writes memos + semantic diffs under `.autoclaw/hermes/`. Plan: [docs/architecture-plan-phases.md](./docs/architecture-plan-phases.md).
+
+Other subsystem personalities (same “profile” metaphor, separate rules):
 
 | Profile | Trigger | Specialty |
 |---|---|---|
+| **Hermes (content)** | `/hermes`, `ResearchHermes` | Research memos + bullet semantic diff (Phases 0–1 shipped as rules) |
 | **Orchestrate** | `/orchestrate`, `plan sprints` | DAG-based sprint planning and agent coordination |
 | **MAteam** | `/mateam launch`, `spawn agents` | Researcher → Coder → Reviewer → Verifier pipeline |
 | **KDream** | `/kdream start`, `persistent daemon` | Background memory and follow-up daemon |
@@ -319,6 +322,7 @@ Hermes profiles are personality definitions loaded via `.agent/rules/`. Current 
 | [docs/how-to-run.md](./docs/how-to-run.md) | Run slash-commands in agent chat (not the terminal) |
 | [docs/control-plane.md](./docs/control-plane.md) | Run the kernel-managed console/headless control plane |
 | [docs/architecture-principles.md](./docs/architecture-principles.md) | Design principles, subsystem contracts, end-to-end lifecycle, verification |
+| [docs/architecture-plan-phases.md](./docs/architecture-plan-phases.md) | Hermes Phases 0–7 build sequence (ResearchHermes first) |
 | [docs/autoclaw-and-kdream.md](./docs/autoclaw-and-kdream.md) | Why `.autoclaw/` / KDream exist; do not check them into git |
 | [docs/README.md](./docs/README.md) | Documentation index |
 | [BRAINSTORM.md](./BRAINSTORM.md) | Open product decisions (not yet shipped) |
