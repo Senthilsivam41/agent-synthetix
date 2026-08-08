@@ -10,6 +10,7 @@ Hermes profiles live under `.agent/rules/hermes/<profile>/`. The host agent load
 | Blog | [`blog/profile.md`](./blog/profile.md) | Long-form posts from research diffs (Phase 3) |
 | Thread | [`thread/profile.md`](./thread/profile.md) | Platform-aware short threads (Phase 6) |
 | Report | [`report/profile.md`](./report/profile.md) | Executive reports with semantic change summary (Phase 6) |
+| Gate | [`gate.md`](./gate.md) | Phase 2 approve / preview / publish / queue |
 
 ## Architecture layers
 
@@ -17,14 +18,16 @@ Hermes = **instruction set** (this directory). Workers today = **local host agen
 
 See [docs/architecture-plan-phases.md](../../../docs/architecture-plan-phases.md) and [docs/hermes-vs-openclaw-layers.svg](../../../docs/hermes-vs-openclaw-layers.svg).
 
-## Slash commands (Phase 1+)
+## Slash commands
 
 | Command | Profile | Status |
 |---|---|---|
 | `/hermes init` | (runtime) | Phase 0 — done |
 | `/hermes research [topic]` | research | Phase 1 — ready |
-| `/hermes approve <id>` | (gate) | Phase 2 |
-| `/hermes preview <id>` | (gate) | Phase 2 |
+| `/hermes preview <id>` | gate | Phase 2 — ready |
+| `/hermes approve <id>` | gate | Phase 2 — ready |
+| `/hermes publish <id>` | gate | Phase 2 — ready |
+| `/hermes queue <source>` | gate | Phase 2 — ready |
 
 ## On-disk runtime (gitignored)
 
@@ -34,6 +37,9 @@ See [docs/architecture-plan-phases.md](../../../docs/architecture-plan-phases.md
   research/
     memos/YYYY-MM-DD/<slug>.md
     sources.json
-  pending/          # Phase 2 approval inbox
-  approved/         # Phase 2
+  pending/          # approval inbox
+  approved/         # after /hermes approve
+  preview/          # HTML from /hermes preview
 ```
+
+Committed publish tree: `site/_posts/` (Jekyll). Deploy branch: `content`.

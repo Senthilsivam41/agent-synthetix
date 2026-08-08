@@ -2,19 +2,24 @@
 
 # Hermes
 
-Host-agnostic instruction set. Profiles live under [`.agent/rules/hermes/`](./hermes/README.md). Runtime state under `.autoclaw/hermes/` (gitignored).
+Host-agnostic instruction set. Profiles live under [`.agent/rules/hermes/`](./hermes/README.md). Runtime state under `.autoclaw/hermes/` (gitignored). Approval + Pages: [hermes/gate.md](./hermes/gate.md).
 
 ## Commands
 
 | Command | Phase | Action |
 |---|---|---|
-| `/hermes init` | 0 | Create `.autoclaw/hermes/{config.yaml,research/{memos,sources.json},pending/,published/}` |
-| `/hermes research <topic>` | **1** | Run [ResearchHermes](./hermes/research/profile.md) |
+| `/hermes init` | 0 | Create `.autoclaw/hermes/{config.yaml,research/{memos,sources.json},pending/,approved/,preview/}` |
+| `/hermes research <topic>` | 1 | Run [ResearchHermes](./hermes/research/profile.md) |
+| `/hermes preview <id>` | **2** | Render pending/approved draft → `.autoclaw/hermes/preview/<id>.html` |
+| `/hermes approve <id>` | **2** | Pending → approved (`approved: true` equivalent) |
+| `/hermes publish <id>` | **2** | Approved → `site/_posts/` + refresh curated index |
+| `/hermes queue <source>` | **2** | Copy memo/file into pending for the gate |
 | `/hermes blog …` | 3 | Scaffold only until Phase 3 |
 | `/hermes thread …` | 6 | Scaffold only |
 | `/hermes report …` | 6 | Scaffold only |
-| `/hermes approve <id>` | 2 | Pending → published (not yet) |
-| `/hermes status` | any | Summarize memos / pending / config |
+| `/hermes status` | any | Summarize memos / pending / approved / staged posts / config |
+
+Load [hermes/gate.md](./hermes/gate.md) for preview / approve / publish / queue algorithms.
 
 ## Init (idempotent)
 
@@ -26,6 +31,7 @@ Write (file tools, not shell):
 .autoclaw/hermes/research/memos/.gitkeep
 .autoclaw/hermes/pending/.gitkeep
 .autoclaw/hermes/approved/.gitkeep
+.autoclaw/hermes/preview/.gitkeep
 ```
 
 Default `config.yaml`:
@@ -36,9 +42,20 @@ similarity_threshold: 0.85
 bullet_similarity_threshold: 0.82
 research:
   default_topics: []
+pages:
+  site_dir: site
+  content_branch: content
+  posts_dir: site/_posts
 ```
 
 Default `sources.json`: `{ "urls": {} }`
+
+## Phase 2 checkpoints
+
+1. **Local content approval** — `/hermes approve` or frontmatter `approved: true` (same end state).  
+2. **Publish/deploy** — `/hermes publish` stages `site/_posts/`; merge to `content` runs [`.github/workflows/pages.yml`](../../.github/workflows/pages.yml).
+
+PR review is **not** content approval.
 
 ## Phase 1 vs later hosting
 

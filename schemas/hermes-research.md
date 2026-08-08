@@ -50,4 +50,10 @@ similarity_threshold: 0.85
 bullet_similarity_threshold: 0.82
 research:
   default_topics: []
+pages:
+  site_dir: site
+  content_branch: content
+  posts_dir: site/_posts
 ```
+
+Publish/approve contracts: [hermes-publish.md](./hermes-publish.md).

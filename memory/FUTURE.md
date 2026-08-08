@@ -40,8 +40,9 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 
 - [x] Phase 0 — directory profiles + tone/platforms
 - [x] Phase 1 — ResearchHermes + semantic/lexical diff + sources.json
-- [ ] Phase 2 — `/hermes approve` + preview + Jekyll Pages
+- [x] Phase 2 — `/hermes approve` + preview + Jekyll `site/` + Pages workflow
 - [ ] Phase 3 — BlogHermes from research diffs
+- [ ] First live Pages deploy — enable Actions source + merge `site/**` to `content`
 - [ ] Phase 4 — `/learn` multi-tool paths
 - [ ] Phase 5 — Linear/GitHub Issues → manifest sync
 - [ ] Phase 6 — ThreadHermes + ReportHermes
