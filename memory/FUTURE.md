@@ -56,6 +56,18 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 - Controlled profile evolution — only after sufficient task-family evidence
 - Hard budgets before any internal bidding/economy experiment
 
+## P6 — Hermes Agent adapter proposal
+
+- [x] Record proposed worker boundary, runtime isolation, evidence trust, and controlled-learning ADRs
+- [x] Write phased implementation plan and issue-sized checklist
+- [ ] H0 — compatibility, pinned runtime, and rollback baseline
+- [ ] H1 — common `WorkerAdapter` and capability snapshots
+- [ ] H2 — local Hermes worktree vertical slice
+- [ ] H3 — authenticated events and grounded citation evidence
+- [ ] H4 — API and console operator surfaces
+- [ ] H5 — optional A2A edge after explicit approval
+- [ ] H6 — controlled profile proposals after evaluation contracts and sufficient data
+
 ## Process (always)
 
 After each major implementation slice:

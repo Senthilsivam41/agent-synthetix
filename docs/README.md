@@ -7,6 +7,11 @@ Canonical docs for **agent-synthetix** — a workspace-native, tool-agnostic age
 | [How to run locally](./how-to-run.md) | Why `/orchestrate` fails in the terminal; how to run commands in agent chat |
 | [Local Control Plane](./control-plane.md) | Kernel-managed headless workflow, review bus, runtime artifacts, and guard modes |
 | [ADR 0001](./adr/0001-control-plane-execution-authority.md) | Accepted execution-authority and verified-completion decision |
+| [Hermes Agent architecture proposal](./proposals/hermes-agent-integration-architecture.md) | To-be worker-adapter, event/evidence, A2A, and controlled-learning projection |
+| [ADR 0002](./adr/0002-hermes-agent-as-governed-worker.md) | Proposed Hermes Agent worker boundary |
+| [ADR 0003](./adr/0003-hermes-transport-and-runtime-isolation.md) | Proposed local-first transport and independent runtime lifecycle |
+| [ADR 0004](./adr/0004-hermes-events-evidence-and-acceptance.md) | Proposed event, citation, and acceptance trust boundary |
+| [ADR 0005](./adr/0005-hermes-learning-as-profile-proposals.md) | Proposed controlled handling of Hermes learning output |
 | [Architecture Principles](./architecture-principles.md) | Design principles, subsystem contracts, coordination model, and detailed implementation approach |
 | [Architecture plan (Hermes phases 0–7)](./architecture-plan-phases.md) | Build sequence: ResearchHermes → approve/Pages → Blog → `/learn` → issues → Thread/Report → OpenClaw |
 | [Hermes vs OpenClaw layers](./hermes-vs-openclaw-layers.svg) | Profile (instructions) vs local worker vs hosted runner |
@@ -30,3 +35,4 @@ Canonical docs for **agent-synthetix** — a workspace-native, tool-agnostic age
 5. For human-facing Orchestrate UX, read [UX specs](./ux/README.md); Intake, Clarify, Plan Review, Approve, Sprints, and command activity ship in `console/`.
 6. Check [BRAINSTORM.md](../BRAINSTORM.md) for unresolved product decisions — do not treat open items as shipped behavior.
 7. Treat `.agent/rules/*.md` as the executable specification the host agent follows at runtime.
+8. Treat proposed ADRs as implementation gates, not shipped behavior. Move them to Accepted only after their stated acceptance conditions are demonstrated.

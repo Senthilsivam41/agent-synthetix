@@ -223,6 +223,30 @@ Every roadmap phase must preserve these invariants:
 | 6 | Resource use is bounded predictably | Conditional | Trustworthy telemetry and guard |
 | 7 | Bidding outperforms simpler routing in simulation | Experimental | Phase 6 plus demonstrated contention |
 
+### Hermes Agent adapter expansion — proposed
+
+Hermes Agent is a candidate heterogeneous worker for the existing adapter layer, not a new roadmap authority or a replacement for phases 0–3. The proposed sequence is:
+
+```text
+Compatibility and rollback baseline
+        ↓
+Common WorkerAdapter contract
+        ↓
+Local Hermes worktree vertical slice
+        ↓
+Authenticated events and citation evidence
+        ↓
+Operator surfaces
+        ↓
+Optional A2A edge
+        ↓
+Controlled profile proposals
+```
+
+The proposal preserves the product sequence: worker-reported completion remains supporting evidence, while the kernel retains leases, worktrees, deterministic gates, independent review, and acceptance. A2A does not unlock bounded coalitions by itself, and Hermes `/learn` or Curator output does not unlock controlled evolution by itself.
+
+See the [to-be architecture](./proposals/hermes-agent-integration-architecture.md), [ADRs 0002–0005](./adr/0002-hermes-agent-as-governed-worker.md), and [implementation plan](../tasks/plan-hermes-agent-integration.md). All are Proposed; no Hermes Agent runtime integration is currently claimed as shipped.
+
 ## 8. Phase 0 — Product baseline and execution authority
 
 ### Outcome
