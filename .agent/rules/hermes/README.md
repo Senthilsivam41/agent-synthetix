@@ -8,8 +8,8 @@ Hermes profiles live under `.agent/rules/hermes/<profile>/`. The host agent load
 |---|---|---|
 | Research | [`research/profile.md`](./research/profile.md) | Cadence research memos + semantic diff vs prior day |
 | Blog | [`blog/profile.md`](./blog/profile.md) | Long-form posts from research diffs (Phase 3 — ready) |
-| Thread | [`thread/profile.md`](./thread/profile.md) | Platform-aware short threads (Phase 6) |
-| Report | [`report/profile.md`](./report/profile.md) | Executive reports with semantic change summary (Phase 6) |
+| Thread | [`thread/profile.md`](./thread/profile.md) | Platform-aware, character-validated short drafts (Phase 6 — ready) |
+| Report | [`report/profile.md`](./report/profile.md) | Evidence-backed executive reports with prior-report semantic diff (Phase 6 — ready) |
 | Gate | [`gate.md`](./gate.md) | Phase 2 approve / preview / publish / queue |
 
 ## Architecture layers
@@ -29,6 +29,8 @@ See [docs/architecture-plan-phases.md](../../../docs/architecture-plan-phases.md
 | `/hermes publish <id>` | gate | Phase 2 — ready |
 | `/hermes queue <source>` | gate | Phase 2 — ready |
 | `/hermes blog …` | blog | Phase 3 — ready |
+| `/hermes thread <source> [--platform …]` | thread | Phase 6 — ready |
+| `/hermes report <source> […]` | report | Phase 6 — ready |
 
 ## On-disk runtime (gitignored)
 

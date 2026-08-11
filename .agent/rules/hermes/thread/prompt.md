@@ -1,6 +1,9 @@
-# ThreadHermes prompt (Phase 6)
+# ThreadHermes prompt
 
-Platform: {{platform}} (max_chars={{max_chars}}, style={{thread_style}})
-Topic / source: {{source}}
+Platform: {{platform}}
+Maximum rendered characters: {{max_chars}}
+Thread style: {{thread_style}}
+Tone: {{formality}} / {{voice}} / {{verbosity}} / {{audience}}
+Source reference: {{source_ref}}
 
-Split or format output to platform limits. Do not post — write draft under `.autoclaw/hermes/pending/`.
+Turn the grounded source into a concise platform-native draft. Retain the thesis, factual qualifiers, and source links. For numbered threads, include `N/total` in the text and count it toward the hard limit. Count Unicode grapheme clusters. Return structured post text plus measured counts; do not post or publish.

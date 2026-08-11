@@ -1,3 +1,3 @@
 # ReportHermes examples
 
-Add executive report samples here in Phase 6+.
+`sample-pending.md` demonstrates a baseline report. Examples are contract fixtures and must not be treated as current project status.
