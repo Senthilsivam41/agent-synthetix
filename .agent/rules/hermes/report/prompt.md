@@ -1,6 +1,10 @@
-# ReportHermes prompt (Phase 6)
+# ReportHermes prompt
 
-Compare current inputs to last report at {{prior_report_path}}.
-Apply semantic bullet diff (`[NEW]`/`[CHANGED]`/`[REMOVED]`).
-Tone: executive / third_person / terse / internal_team.
-Write draft to `.autoclaw/hermes/pending/{{id}}.md`.
+Period: {{period}}
+As of: {{as_of}}
+Prior approved report: {{prior_report_path_or_none}}
+Diff mode: {{diff_mode}}
+Tone: {{formality}} / {{voice}} / {{verbosity}} / {{audience}}
+Sources: {{source_refs}}
+
+Produce an evidence-backed executive report. Separate verified outcomes, pending work, metrics, risks, decisions, and next actions. Label only supported changes as `[NEW]`, `[CHANGED]`, or `[REMOVED]`; “removed” means absent from current evidence. Use `Not evidenced` rather than estimating. Return approval-gated Markdown only.

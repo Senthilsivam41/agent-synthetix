@@ -1,57 +1,76 @@
+import { readFileSync } from "node:fs";
+import Ajv2020, { type ErrorObject, type ValidateFunction } from "ajv/dist/2020.js";
 import { SCHEMA_VERSION, type ExecutionEvent, type ReviewVerdict } from "./contracts";
 
-export const CONTRACT_SCHEMAS = {
-  AgentProfile: objectSchema(["schema_version", "agent_id", "display_name", "adapter_type", "capabilities", "status", "created_at", "updated_at"]),
-  AgentSession: objectSchema(["schema_version", "session_id", "agent_id", "issued_at", "expires_at", "status"]),
-  TaskAssignment: objectSchema(["schema_version", "assignment_id", "task_id", "title", "goal", "dependencies", "read_scopes", "write_scopes", "acceptance_criteria", "required_capabilities", "gates", "base_commit", "assigned_agent_id", "reviewer_agent_id", "created_at"]),
-  ExecutionEvent: objectSchema(["schema_version", "event_id", "event_type", "execution_id", "assignment_id", "agent_id", "session_id", "occurred_at", "payload"]),
-  ArtifactManifest: objectSchema(["schema_version", "execution_id", "base_commit", "head_commit", "tree_id", "changed_files", "name_status", "patch_path", "created_at"]),
-  VerificationEvidence: objectSchema(["schema_version", "evidence_id", "execution_id", "scope_passed", "changed_files", "out_of_scope_files", "gates", "created_at"]),
-  ReviewRequest: objectSchema(["schema_version", "review_id", "execution_id", "assignment_id", "worker_agent_id", "worker_session_id", "reviewer_agent_id", "evidence_id", "created_at", "expires_at"]),
-  ReviewVerdict: objectSchema(["schema_version", "event_id", "review_id", "execution_id", "reviewer_agent_id", "reviewer_session_id", "verdict", "comments", "evidence_refs", "occurred_at"]),
-  ExecutionSummary: objectSchema(["schema_version", "execution_id", "assignment_id", "worker_agent_id", "worker_session_id", "state", "updated_at"]),
-  GuardFinding: objectSchema(["schema_version", "finding_id", "severity", "category", "message", "status", "created_at"]),
-} as const;
+type ContractName =
+  | "AgentProfile"
+  | "AgentSession"
+  | "TaskAssignment"
+  | "ExecutionEvent"
+  | "ArtifactManifest"
+  | "VerificationEvidence"
+  | "ReviewRequest"
+  | "ReviewVerdict"
+  | "ExecutionSummary"
+  | "GuardFinding"
+  | "PlanManifest"
+  | "AdapterConfig";
 
-function objectSchema(required: string[]) {
-  return {
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    type: "object",
-    additionalProperties: true,
-    required,
-    properties: { schema_version: { const: SCHEMA_VERSION } },
-  } as const;
+type SchemaBundle = {
+  $id: string;
+  definitions: Record<string, Record<string, unknown>>;
+};
+
+const bundlePath = new URL("../../schemas/control-plane.schema.json", import.meta.url);
+const schemaBundle = JSON.parse(readFileSync(bundlePath, "utf8")) as SchemaBundle;
+const ajv = new Ajv2020({ allErrors: true, strict: true });
+ajv.addSchema(schemaBundle);
+
+export const CONTRACT_SCHEMAS = schemaBundle.definitions;
+
+const validators = new Map<ContractName, ValidateFunction>();
+
+function validator(name: ContractName) {
+  const cached = validators.get(name);
+  if (cached) return cached;
+  if (!schemaBundle.definitions[name]) throw new Error(`generated schema is missing ${name}`);
+  const compiled = ajv.compile({ $ref: `${schemaBundle.$id}#/definitions/${name}` });
+  validators.set(name, compiled);
+  return compiled;
 }
 
-export function assertVersionedObject(value: unknown, required: string[], label: string): asserts value is Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-  const row = value as Record<string, unknown>;
-  if (row.schema_version !== SCHEMA_VERSION) {
-    throw new Error(`${label} has unsupported schema_version`);
-  }
-  for (const key of required) {
-    if (!(key in row)) throw new Error(`${label} missing ${key}`);
-  }
+function formatErrors(errors: ErrorObject[] | null | undefined) {
+  return (errors ?? []).map((error) => {
+    const location = error.instancePath || "value";
+    const detail = error.keyword === "additionalProperties"
+      ? `unexpected property ${String(error.params.additionalProperty)}`
+      : error.keyword === "required"
+        ? `missing required property ${String(error.params.missingProperty)}`
+      : error.message ?? error.keyword;
+    return `${location} ${detail}`;
+  }).join("; ");
+}
+
+export function validateContract<T>(name: ContractName, value: unknown, label: string): T {
+  const validate = validator(name);
+  if (!validate(value)) throw new Error(`${label} failed schema validation: ${formatErrors(validate.errors)}`);
+  return value as T;
 }
 
 export function parseReviewVerdict(value: unknown): ReviewVerdict {
-  assertVersionedObject(
-    value,
-    ["event_id", "review_id", "execution_id", "reviewer_agent_id", "reviewer_session_id", "verdict", "comments", "evidence_refs", "occurred_at"],
-    "review verdict",
-  );
-  if (!["approve", "request_changes", "reject"].includes(String(value.verdict))) {
-    throw new Error("review verdict has invalid verdict");
-  }
-  if (!Array.isArray(value.evidence_refs)) throw new Error("review verdict evidence_refs must be an array");
-  return value as ReviewVerdict;
+  assertSupportedVersion(value, "review verdict");
+  return validateContract<ReviewVerdict>("ReviewVerdict", value, "review verdict");
 }
 
 export function parseExecutionEvent(value: unknown): ExecutionEvent {
-  assertVersionedObject(value, ["event_id", "event_type", "execution_id", "assignment_id", "agent_id", "session_id", "occurred_at", "payload"], "execution event");
-  if (!value.payload || typeof value.payload !== "object" || Array.isArray(value.payload)) throw new Error("execution event payload must be an object");
-  if (!Number.isFinite(Date.parse(String(value.occurred_at)))) throw new Error("execution event occurred_at must be an ISO timestamp");
-  return value as ExecutionEvent;
+  assertSupportedVersion(value, "execution event");
+  const event = validateContract<ExecutionEvent>("ExecutionEvent", value, "execution event");
+  if (!Number.isFinite(Date.parse(event.occurred_at))) throw new Error("execution event occurred_at must be an ISO timestamp");
+  return event;
+}
+
+function assertSupportedVersion(value: unknown, label: string) {
+  if (value && typeof value === "object" && !Array.isArray(value) && "schema_version" in value && (value as { schema_version?: unknown }).schema_version !== SCHEMA_VERSION) {
+    throw new Error(`${label} has unsupported schema_version`);
+  }
 }

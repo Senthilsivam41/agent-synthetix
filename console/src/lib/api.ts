@@ -1,4 +1,24 @@
 export type IntakeFile = { name: string; type: string };
+export type ClarificationAnswer = { question: string; answer: string };
+export type ClarificationsResponse = { text: string; open: string[]; answered: ClarificationAnswer[] };
+export type PlanResponse = {
+  exists: boolean;
+  title: string;
+  goal: string;
+  version: number;
+  status: string;
+  workflow_status: string;
+  scope_warnings: string[];
+  can_approve: boolean;
+  task_count: number;
+  phase_count: number;
+  text: string;
+};
+export type CommandItem = { id?: string; command?: string; status?: string; enqueued_at?: string; processed_at?: string; args?: Record<string, unknown> };
+export type CommandActivity = {
+  pending: { items: CommandItem[]; malformed: number };
+  processed: { items: CommandItem[]; malformed: number };
+};
 export type ControlPlaneStatus = {
   schema_version: string;
   authoritative_store: string;
@@ -31,6 +51,20 @@ export const api = {
     json<{ files: IntakeFile[]; index: string }>(
       fetch("/api/orchestrator/intake"),
     ),
+
+  clarifications: () => json<ClarificationsResponse>(fetch("/api/orchestrator/clarifications")),
+  askClarifications: () => json<{ ok: true }>(fetch("/api/orchestrator/clarifications/ask", { method: "POST" })),
+  saveClarificationAnswers: (answers: ClarificationAnswer[]) =>
+    json<ClarificationsResponse & { ok: true }>(fetch("/api/orchestrator/clarifications/answers", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers }),
+    })),
+  plan: () => json<PlanResponse>(fetch("/api/orchestrator/plan")),
+  draftPlan: () => json<{ ok: true }>(fetch("/api/orchestrator/plan/draft", { method: "POST" })),
+  revisePlan: (feedback: string) => json<{ ok: true }>(fetch("/api/orchestrator/plan/revise", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ feedback }),
+  })),
+  approvePlan: () => json<{ ok: true; plan: PlanResponse }>(fetch("/api/orchestrator/plan/approve", { method: "POST" })),
+  commandActivity: () => json<CommandActivity>(fetch("/api/orchestrator/commands/activity")),
 
   indexIntake: () =>
     json<{ ok: boolean; count: number; index: string }>(
@@ -66,3 +100,14 @@ export const api = {
       fetch("/api/orchestrator/commands/pending"),
     ),
 };
+
+export function watchRuntime(onChange: (areas: string[]) => void) {
+  const source = new EventSource("/api/orchestrator/events");
+  source.addEventListener("runtime_changed", (event) => {
+    try {
+      const payload = JSON.parse((event as MessageEvent<string>).data) as { areas?: string[] };
+      onChange(payload.areas ?? []);
+    } catch { /* malformed invalidations are ignored; the next valid event refreshes state */ }
+  });
+  return () => source.close();
+}

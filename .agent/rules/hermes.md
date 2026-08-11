@@ -14,12 +14,26 @@ Host-agnostic instruction set. Profiles live under [`.agent/rules/hermes/`](./he
 | `/hermes approve <id>` | **2** | Pending → approved (`approved: true` equivalent) |
 | `/hermes publish <id>` | **2** | Approved → `site/_posts/` + refresh curated index |
 | `/hermes queue <source>` | **2** | Copy memo/file into pending for the gate |
-| `/hermes blog …` | 3 | Scaffold only until Phase 3 |
-| `/hermes thread …` | 6 | Scaffold only |
-| `/hermes report …` | 6 | Scaffold only |
+| `/hermes blog <slug\|date/slug\|--memo path>` | **3** | [BlogHermes](./hermes/blog/profile.md) — memo diff → pending post |
+| `/hermes thread <source> [--platform …]` | 6 | [ThreadHermes](./hermes/thread/profile.md) — platform-constrained draft → pending |
+| `/hermes report <source> […]` | 6 | [ReportHermes](./hermes/report/profile.md) — evidence/change report → pending |
 | `/hermes status` | any | Summarize memos / pending / approved / staged posts / config |
 
-Load [hermes/gate.md](./hermes/gate.md) for preview / approve / publish / queue algorithms.
+Load [hermes/gate.md](./hermes/gate.md) for preview / approve / publish / queue. Load [hermes/blog/profile.md](./hermes/blog/profile.md) for `/hermes blog`.
+Load [hermes/thread/profile.md](./hermes/thread/profile.md) for `/hermes thread` and [hermes/report/profile.md](./hermes/report/profile.md) for `/hermes report`.
+
+## Phase 3 pipeline (smoke)
+
+```
+/hermes research <topic>
+  → memo under research/memos/
+/hermes blog <date>/<slug>   # or --memo <path>
+  → pending/<post_date>-<slug>.md
+/hermes preview <id>
+/hermes approve <id>
+/hermes publish <id>
+  → site/_posts/…  then PR/push to content branch
+```
 
 ## Init (idempotent)
 
@@ -40,6 +54,7 @@ Default `config.yaml`:
 primary_platform: x
 similarity_threshold: 0.85
 bullet_similarity_threshold: 0.82
+report_similarity_threshold: 0.84
 research:
   default_topics: []
 pages:

@@ -1,3 +1,3 @@
 # ThreadHermes examples
 
-Add platform-shaped samples here in Phase 6+.
+`sample-pending.md` demonstrates the approval-gated, platform-aware output contract. Examples are illustrative fixtures, not publishable claims.

@@ -28,6 +28,14 @@ npm run control-plane -- status --workspace ..
 
 The default adapter is `mock`, so initialization is safe for CI. To use the live adapter, edit the gitignored `.autoclaw/orchestrator/control-plane.config.json`, set `mode` to `dual-router`, and configure the Python executable, local router path, models, timeout, grace period, and environment-variable allowlist. Secrets are inherited only through that allowlist and never placed in arguments.
 
+Run `npm run smoke:dual-router:live` for the credential-gated live acceptance proof. It uses a temporary clean Git repository, deterministic gates, and an independent reviewer session. If neither supported credential is present, it reports `skipped` without printing secret values.
+
+## Contracts and console refresh
+
+`npm run generate:schemas` deterministically generates `console/schemas/control-plane.schema.json` from the TypeScript contracts. Ajv enforces the generated Draft 2020-12 definitions at external event, verdict, manifest, and adapter-configuration boundaries; unknown properties fail validation.
+
+The Vite console watches relevant `.autoclaw/orchestrator/` files and publishes coalesced invalidations over `/api/orchestrator/events`. The browser then refetches authoritative API views. The event stream is an invalidation channel, not a second state store. Clarify, Plan Review, Approve, Sprints, and pending/processed command activity are available in the console.
+
 ## Review file bus
 
 Review requests are written to `.autoclaw/orchestrator/comms/inboxes/<reviewer-agent-id>/`. A reviewer returns a schema-versioned `*.verdict.json` file in its inbox. `ingest` validates the review ID, evidence reference, expiry, reviewer identity, and reviewer session before changing execution state.

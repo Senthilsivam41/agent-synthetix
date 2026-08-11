@@ -1,0 +1,68 @@
+schema_version: "1.0"
+sources:
+  - id: autoclaw
+    label: AutoClaw native
+    consent: default
+    format: autoclaw_json_markdown
+    locations:
+      - .autoclaw/orchestrator/logs/**/*.json
+      - .autoclaw/kdream/logs/**/*.md
+    kept_signal: native_and_git
+    unsupported_behavior: unavailable
+    provenance_confidence: verified
+
+  - id: claude_code
+    label: Claude Code
+    consent: opt_in
+    format: claude_code_jsonl
+    locations:
+      - ~/.claude/projects/**/*.jsonl
+    kept_signal: git_evidence
+    unsupported_behavior: unavailable
+    provenance_confidence: verified
+
+  - id: claude_desktop
+    label: Claude Desktop export
+    consent: opt_in
+    format: export_markdown_or_json
+    locations:
+      - <user-supplied-export>.md
+      - <user-supplied-export>.json
+    kept_signal: manual
+    unsupported_behavior: export_required
+    provenance_confidence: manual
+
+  - id: cursor
+    label: Cursor
+    consent: opt_in
+    format: cursor_sqlite
+    locations:
+      - ~/Library/Application Support/Cursor/User/workspaceStorage/*/state.vscdb
+      - ~/Library/Application Support/Cursor/User/globalStorage/state.vscdb
+    sqlite_keys:
+      - composer.composerData
+      - aiService.prompts
+      - aiService.generations
+    kept_signal: native_and_git
+    unsupported_behavior: fail_closed
+    provenance_confidence: inferred
+
+  - id: kiro
+    label: Kiro CLI
+    consent: opt_in
+    format: kiro_acp_jsonl
+    locations:
+      - ~/.kiro/sessions/cli/*.jsonl
+    kept_signal: native_and_git
+    unsupported_behavior: unavailable
+    provenance_confidence: verified
+
+  - id: gemini
+    label: Gemini CLI
+    consent: opt_in
+    format: gemini_cli_jsonl
+    locations:
+      - ~/.gemini/tmp/*/chats/session-*.jsonl
+    kept_signal: git_evidence
+    unsupported_behavior: unavailable
+    provenance_confidence: verified

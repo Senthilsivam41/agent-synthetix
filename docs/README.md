@@ -26,6 +26,6 @@ Canonical docs for **agent-synthetix** — a workspace-native, tool-agnostic age
 2. Read [Architecture Principles](./architecture-principles.md) before extending subsystems, adding agents, or changing the on-disk contract.
 3. Read the [Product Roadmap](./product-roadmap.md) for positioning, priorities, phase gates, and success measures.
 4. Read [`.autoclaw` and KDream](./autoclaw-and-kdream.md) before committing anything under `.autoclaw/` — that tree is gitignored runtime state.
-5. For human-facing Orchestrate UX, read [UX specs](./ux/README.md); Intake and the kernel-backed Sprints surface ship in `console/`, while Clarify, Plan, and Approve remain placeholders.
+5. For human-facing Orchestrate UX, read [UX specs](./ux/README.md); Intake, Clarify, Plan Review, Approve, Sprints, and command activity ship in `console/`.
 6. Check [BRAINSTORM.md](../BRAINSTORM.md) for unresolved product decisions — do not treat open items as shipped behavior.
 7. Treat `.agent/rules/*.md` as the executable specification the host agent follows at runtime.
