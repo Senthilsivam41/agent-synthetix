@@ -326,6 +326,7 @@ Other subsystem personalities (same “profile” metaphor, separate rules):
 | [docs/control-plane.md](./docs/control-plane.md) | Run the kernel-managed console/headless control plane |
 | [docs/architecture-principles.md](./docs/architecture-principles.md) | Design principles, subsystem contracts, end-to-end lifecycle, verification |
 | [docs/architecture-plan-phases.md](./docs/architecture-plan-phases.md) | Hermes Phases 0–7 build sequence (ResearchHermes first) |
+| [docs/proposals/hermes-agent-integration-architecture.md](./docs/proposals/hermes-agent-integration-architecture.md) | Proposed Hermes Agent worker integration and to-be architecture |
 | [docs/autoclaw-and-kdream.md](./docs/autoclaw-and-kdream.md) | Why `.autoclaw/` / KDream exist; do not check them into git |
 | [docs/README.md](./docs/README.md) | Documentation index |
 | [BRAINSTORM.md](./BRAINSTORM.md) | Open product decisions (not yet shipped) |
