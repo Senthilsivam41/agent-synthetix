@@ -1,8 +1,8 @@
 # Current status
 
 **Updated:** 2026-08-11
-**Branch:** `codex/summarise-agentsynthetix-changes`  
-**Last slice:** Hermes Phase 3 (BlogHermes)
+**Branch:** `codex/hermes-phase4-phase6-a11y-pages`
+**Last slice:** Console accessibility + Hermes Phases 4 and 6 + first Pages release
 
 ## Product shape
 
@@ -11,7 +11,7 @@
 - Optional UI: Vite console under `console/`
 - Hermes content profiles: `.agent/rules/hermes.md` + `.agent/rules/hermes/<profile>/`
 
-## Hermes (architecture plan Phases 0–3)
+## Hermes (architecture plan Phases 0–4 and 6)
 
 | Piece | Status |
 |---|---|
@@ -20,8 +20,9 @@
 | Gate: preview / approve / publish / queue | Done |
 | Jekyll `site/` + Pages Actions (`content`) | Done |
 | BlogHermes (`/hermes blog` → pending from memo diff) | Done |
-| Thread / Report generators | Scaffold (Phase 6) |
-| Live Pages deploy | Needs Settings → Pages → Actions + push `content` |
+| `/learn` multi-tool adapters + normalized provenance | Done (Phase 4) |
+| Thread / Report generators | Done (Phase 6) |
+| Live Pages deploy | Live: https://senthilsivam41.github.io/agent-synthetix/ (run `31512674632`, commit `895d9f6`) |
 | OpenClaw hosted runner | Later (Phase 7) |
 
 Layering: Hermes profile (host-agnostic) → local host agent today → `.autoclaw` (vector, KG, MEMORY.md). See `docs/architecture-plan-phases.md` and `docs/hermes-vs-openclaw-layers.svg`.
@@ -61,6 +62,7 @@ Present in `.agent/rules/orchestrate.md`:
 | Pending / processed commands + filesystem refresh | Done |
 | Generated strict JSON Schema validation | Done |
 | Live dual-router smoke harness | Done; credential-gated run skipped on 2026-08-11 because no supported credential was available |
+| WCAG 2.2 AA implementation pass | Done; Axe/keyboard/token tests pass, manual screen-reader and browser-zoom checks remain |
 
 ### Run console
 
@@ -73,16 +75,17 @@ cd console && npm install && npm run dev
 
 1. Execute the live dual-router smoke when a supported model credential is explicitly available
 2. Add browser-level interaction coverage for the guided console workflow
-3. Hermes Phase 4+ (`/learn` paths) / Phase 6 Thread+Report
-4. First live Pages deploy (enable Actions + `content` branch)
+3. Complete manual VoiceOver/NVDA, zoom, and high-contrast console verification
+4. Hermes Phase 5 GitHub Issues synchronization
 5. `.autoclaw/` is local runtime (gitignored) — do not commit
 
-## Try Hermes Phase 1–3
+## Try Hermes Phases 1–4 and 6
 
 In agent chat (not terminal):
 
 1. `/hermes init`
 2. `/hermes research local-first agent memory`
 3. `/hermes blog <date>/<slug>` (or `--memo <path>`)
-4. `/hermes preview <id>` → `/hermes approve <id>` → `/hermes publish <id>`
-5. Open PR / push `site/**` to branch `content` for Pages deploy
+4. `/hermes thread <source> --platform x` or `/hermes report <source>`
+5. `/hermes preview <id>` → `/hermes approve <id>` → `/hermes publish <id>`
+6. Push approved `site/**` to `content`; Pages deploys through Actions

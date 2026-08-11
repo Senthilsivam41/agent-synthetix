@@ -204,7 +204,10 @@ Read `.autoclaw/AGENT-ORIENTATION.md` — the authoritative description of every
 ### 4. Learn from past sessions
 ```
 /learn
+/sources
 ```
+
+`/sources` controls consent for AutoClaw, Claude Code, Claude Desktop exports, Cursor, Kiro, and Gemini. `/learn` reads enabled sources without modifying them, redacts before persistence, records workspace/session provenance and kept/discarded/unknown evidence, and resumes from atomic watermarks.
 
 ### 5. Start the background daemon
 ```
@@ -284,13 +287,13 @@ Expanded rationale and invariants: [docs/architecture-principles.md](./docs/arch
 
 ## Hermes Profiles (Specialized Agent Personalities)
 
-**Content Hermes** (research / blog / thread / report) is a host-agnostic instruction set under `.agent/rules/hermes/` — local host agent today, OpenClaw hosted runner later ([layers diagram](./docs/hermes-vs-openclaw-layers.svg)). Pipeline: `/hermes research` → `/hermes blog` (diff → pending) → `preview` / `approve` / `publish` → [site/](./site/) → merge `content` deploys Pages. Plan: [docs/architecture-plan-phases.md](./docs/architecture-plan-phases.md).
+**Content Hermes** (research / blog / thread / report) is a host-agnostic instruction set under `.agent/rules/hermes/` — local host agent today, OpenClaw hosted runner later ([layers diagram](./docs/hermes-vs-openclaw-layers.svg)). Pipeline: `/hermes research` → `/hermes blog` (diff → pending) → `preview` / `approve` / `publish` → [site/](./site/) → merge `content` deploys [Hermes Pages](https://senthilsivam41.github.io/agent-synthetix/). `/hermes thread <source> --platform ...` and `/hermes report <source>` enter the same approval gate; neither publishes directly. Plan: [docs/architecture-plan-phases.md](./docs/architecture-plan-phases.md).
 
 Other subsystem personalities (same “profile” metaphor, separate rules):
 
 | Profile | Trigger | Specialty |
 |---|---|---|
-| **Hermes (content)** | `/hermes`, `ResearchHermes`, `BlogHermes` | Research → blog pending → approve/publish → Pages (Phases 0–3) |
+| **Hermes (content)** | `/hermes`, `ResearchHermes`, `BlogHermes`, `ThreadHermes`, `ReportHermes` | Research/blog/thread/report → pending → approve/publish → Pages (Phases 0–4 and 6) |
 | **Orchestrate** | `/orchestrate`, `plan sprints` | DAG-based sprint planning and agent coordination |
 | **MAteam** | `/mateam launch`, `spawn agents` | Researcher → Coder → Reviewer → Verifier pipeline |
 | **KDream** | `/kdream start`, `persistent daemon` | Background memory and follow-up daemon |

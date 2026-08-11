@@ -11,6 +11,7 @@ Canonical docs for **agent-synthetix** — a workspace-native, tool-agnostic age
 | [Architecture plan (Hermes phases 0–7)](./architecture-plan-phases.md) | Build sequence: ResearchHermes → approve/Pages → Blog → `/learn` → issues → Thread/Report → OpenClaw |
 | [Hermes vs OpenClaw layers](./hermes-vs-openclaw-layers.svg) | Profile (instructions) vs local worker vs hosted runner |
 | [Hermes Pages site](../site/README.md) | Jekyll `site/` — approve → publish → `content` branch → Actions |
+| [Console accessibility audit](./ux/accessibility-audit-2026-08-11.md) | WCAG 2.2 AA implementation findings, automated evidence, and remaining manual checks |
 | [Product Roadmap](./product-roadmap.md) | Market position, target users, phased delivery plan, gates, metrics, risks, and go-to-market sequence |
 | [`.autoclaw` and KDream](./autoclaw-and-kdream.md) | Check-in policy (do not commit runtime state) and primary purpose of `.autoclaw/` / KDream |
 | [UX — Orchestrate Control Console](./ux/README.md) | End-user UI/UX design specs (intake → approve → sprints); runtime in `console/` |

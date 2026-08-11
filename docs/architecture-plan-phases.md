@@ -139,7 +139,7 @@ Orchestrate's soft-gate approval is already decided (frontmatter `approved: true
 - [x] `.github/workflows/pages.yml` deploy-on-merge — push to `content` branch
 - [x] Doc Writer: generate curated index page per Hermes profile — `site/index.md` markers + doc-writer rule
 
-**Phase 2 ship note (2026-08-08):** Agent-executable gate + Jekyll site + Actions workflow landed. Enable GitHub Pages (Actions source) and merge `site/**` to `content` for the first live deploy. BlogHermes (Phase 3) will write pending drafts automatically; until then use `/hermes queue` or hand-authored pending files.
+**Phase 2 ship note (updated 2026-08-11):** Agent-executable gate + Jekyll site + Actions workflow are live at [senthilsivam41.github.io/agent-synthetix](https://senthilsivam41.github.io/agent-synthetix/). First verified deployment: Actions run `31512674632`, content commit `895d9f6`. The Pages environment permits the `content` branch. Future rollback is a normal revert to the previous verified content commit followed by the same workflow; the first release has no earlier Pages release to restore.
 
 ---
 
@@ -165,19 +165,24 @@ BlogHermes consumes ResearchHermes's diffed memo as input (not raw research) —
 ### Context
 Lower priority per your ordering, but unblocks better BlogHermes/ResearchHermes quality sooner if pulled forward — flagging that as an option, not changing the sequence unless you want to.
 
-### Recommended Decision
-**[DECISION NEEDED]** — actual macOS session-storage paths for Kiro and Gemini aren't things I can verify without you pointing me at them (they're not publicly documented the way Claude Code's `~/.claude/` or Cursor's SQLite session store are). Recommend: spend a short spike confirming paths for all 5 tools before writing the ingester, rather than guessing — a wrong path silently ingests nothing rather than erroring loudly, which is worse than a stub.
+### Implemented Decision
+Use a versioned source registry at `.agent/rules/intelligence/sources.yaml`. Each source declares consent, discovery paths, parser format, kept/discarded signal, confidence, and explicit unsupported behavior. Local stores are read-only; Claude Desktop requires an explicit export rather than application-database scraping. Missing or changed formats produce visible findings instead of silently ingesting nothing.
 
 **Kept-vs-discarded signal, tool-by-tool:**
 - Claude Code: git diff (already decided) — commits after a session = kept, uncommitted/reverted = discarded.
 - Cursor: same git-diff heuristic works (it operates on the same repo).
 - Claude Desktop: no repo context by default — signal has to come from the conversation itself (did the user say "use this" / copy code out) or from an explicit `/learn --source desktop --mark-kept` manual flag. Lower-confidence source; tag learnings from it with a `confidence: manual` provenance stamp (matches the `verified_by` provenance pattern KDream already uses).
-- Kiro / Gemini: unknown until the path/format spike above completes — plan for git-diff if they're repo-scoped, manual-flag if not.
+- Kiro CLI: JSONL sessions under `~/.kiro/sessions/cli/` (or `KIRO_HOME`); repo attribution plus git evidence when available.
+- Gemini CLI: project-scoped JSONL chats under `~/.gemini/tmp/*/chats/`; project metadata plus git evidence when available.
+
+Every normalized record follows `schemas/learning-insight.md`: redact first, then fingerprint; preserve source/session/path-hash provenance; retain `unknown` classifications; deduplicate idempotently; advance watermarks only after atomic success.
 
 ### Action Items
-- [ ] Spike: confirm session file paths for Kiro, Gemini, Cursor, Claude Desktop on macOS
-- [ ] Extend `/learn` kept-signal logic per-tool (git-diff vs manual-flag vs provenance-stamped)
-- [ ] Document findings in `docs/architecture-principles.md` §Intelligence
+- [x] Confirm and encode source paths/formats for Kiro, Gemini, Cursor, Claude Desktop, and Claude Code
+- [x] Extend `/learn` kept-signal logic per-tool (git evidence vs manual provenance vs unknown)
+- [x] Document adapters and normalized insight contract in `docs/architecture-principles.md` §Intelligence
+
+**Phase 4 ship note (2026-08-11):** Agent-executable ingestion contract, source registry, normalized schema, consent/redaction rules, and contract tests landed. This remains a host-agent rule layer: third-party tools are read-only inputs and unavailable sources are reported, not fabricated.
 
 ---
 
@@ -205,8 +210,10 @@ Lower priority per your ordering, but unblocks better BlogHermes/ResearchHermes 
 Mechanically reuses Phase 0's directory format and `platforms.yaml`; ReportHermes reuses Phase 1's semantic-diff pattern for "what changed since last report" instead of research memos.
 
 ### Action Items
-- [ ] ThreadHermes: implement `--platform` arg against `platforms.yaml`
-- [ ] ReportHermes: reuse bullet-level semantic diff against last report, executive/terse tone default
+- [x] ThreadHermes: implement `--platform` arg against `platforms.yaml`
+- [x] ReportHermes: reuse bullet-level semantic diff against last report, executive/terse tone default
+
+**Phase 6 ship note (2026-08-11):** ThreadHermes enforces Unicode-grapheme platform limits and fails instead of truncating; ReportHermes compares only against the last approved report and marks `[NEW]`, `[CHANGED]`, and `[REMOVED]` without inventing metrics. Both write unapproved pending artifacts and never publish directly.
 
 ---
 

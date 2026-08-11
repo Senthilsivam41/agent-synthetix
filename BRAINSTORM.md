@@ -90,10 +90,11 @@ Decisions made → captured in README.md. These are the **open unknowns** needin
 
 **Decision made:** Ingest from all 5 tools: Claude Code, Claude Desktop, Kiro, Gemini, Cursor.
 
-**Still open:**
-- Each tool stores sessions differently. What are the actual file paths for each on macOS?
-- Kiro and Gemini session formats — are they documented?
-- How does the kept-vs-discarded signal work for tools other than Claude Code (where git-diff is the kept signal)?
+**Implemented decision (Phase 4):**
+- Versioned adapters live in `.agent/rules/intelligence/sources.yaml`; unsupported or unavailable sources fail visibly instead of silently returning no sessions.
+- Claude Code, Cursor, Kiro, and Gemini use documented/discovered local stores with read-only access and workspace attribution. Claude Desktop requires an explicit export; application databases are not scraped.
+- Kept/discarded classification records source-specific evidence. Ambiguous evidence remains `unknown`; manual `--mark-kept` is explicit, provenance-stamped, and cannot silently upgrade an unrelated session.
+- The normalized insight contract, redaction order, fingerprints, watermarks, and idempotency rules are defined in `schemas/learning-insight.md`.
 
 ---
 
@@ -113,7 +114,7 @@ Decisions made → captured in README.md. These are the **open unknowns** needin
 1. ~~ResearchHermes + diff engine~~ — Phase 1 done
 2. ~~Approval gate + publish to GitHub Pages~~ — Phase 2 done
 3. ~~BlogHermes output format~~ — Phase 3 done (`/hermes blog` → pending)
-4. `/learn` multi-tool ingestion (all 5 sources)
+4. ~~`/learn` multi-tool ingestion (all 5 sources)~~ — Phase 4 done
 5. Linear/GitHub Issues manifest sync
-6. ThreadHermes + ReportHermes
+6. ~~ThreadHermes + ReportHermes~~ — Phase 6 done
 7. OpenClaw scale-out

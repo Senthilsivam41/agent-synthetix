@@ -28,7 +28,7 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 - [x] Command outbox UI: show pending/processed queue; “copy slash-cmd” helper
 - [x] Markdown renderer for plan body (safe subset)
 - [x] YAML parse for status + sprint rows (already depend on `yaml` package)
-- A11y pass per `docs/ux/orchestrate-console.md` (focus, reduced motion, dropzone picker)
+- [x] A11y pass per `docs/ux/orchestrate-console.md` (focus, reduced motion, dropzone picker)
 - Light theme tokens (`data-theme="light"`)
 
 ## P3 — Agent / contract
@@ -43,10 +43,10 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 - [x] Phase 1 — ResearchHermes + semantic/lexical diff + sources.json
 - [x] Phase 2 — `/hermes approve` + preview + Jekyll `site/` + Pages workflow
 - [x] Phase 3 — BlogHermes from research diffs → pending
-- [ ] First live Pages deploy — enable Actions source + merge `site/**` to `content`
-- [ ] Phase 4 — `/learn` multi-tool paths
+- [x] First live Pages deploy — Actions run `31512674632`, live at https://senthilsivam41.github.io/agent-synthetix/
+- [x] Phase 4 — `/learn` multi-tool paths
 - [ ] Phase 5 — Linear/GitHub Issues → manifest sync
-- [ ] Phase 6 — ThreadHermes + ReportHermes
+- [x] Phase 6 — ThreadHermes + ReportHermes
 - [ ] Phase 7 — OpenClaw hosted runner + Postgres migration for vector/KG
 
 ## P5 — Broader AutoClaw (out of console MVP)
