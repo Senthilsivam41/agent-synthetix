@@ -20,4 +20,17 @@ UI buttons enqueue lines to `.autoclaw/orchestrator/commands/pending.jsonl`. Hos
 
 - [x] Scaffold + tokens + FS API
 - [x] Intake screen (upload / index / enqueue)
-- [ ] Clarify / Plan / Approve / Sprints screens
+- [x] Clarify / Plan / Approve / Sprints screens
+- [x] Filesystem-driven refresh and pending/processed command activity
+- [x] Strict generated JSON Schema validation
+
+## Verification
+
+```bash
+npm run generate:schemas
+npm test
+npm run build
+npm run smoke:dual-router:live
+```
+
+The live smoke command runs in a temporary Git repository when `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` is available. Otherwise it exits successfully with an explicit `skipped` result.

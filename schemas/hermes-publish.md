@@ -16,6 +16,14 @@ Path: `.autoclaw/hermes/pending/<id>.md` → after approve → `.autoclaw/hermes
 | `tags` | string[] | optional |
 | `approved` | bool | false in pending; true in approved |
 | `approved_at` | string \| omit | ISO-8601 UTC set by `/hermes approve` |
+| `source_memo` | string \| omit | BlogHermes: path to ResearchHermes memo |
+| `source_memo_date` | date \| omit | BlogHermes: memo day |
+| `prior_date` | date \| null \| omit | BlogHermes: diff prior day |
+| `baseline_source` | bool \| omit | BlogHermes: true if source memo had no Diff |
+
+## BlogHermes input
+
+Primary input = ResearchHermes memo at `.autoclaw/hermes/research/memos/YYYY-MM-DD/<slug>.md`. Prefer memos with `## Diff vs …`. Output `profile: blog` pending draft — see [blog/profile.md](../.agent/rules/hermes/blog/profile.md).
 
 ## Jekyll post (`site/_posts/YYYY-MM-DD-slug.md`)
 

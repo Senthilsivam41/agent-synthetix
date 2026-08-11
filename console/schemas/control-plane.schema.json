@@ -1,0 +1,796 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "definitions": {
+    "GuardMode": {
+      "type": "string",
+      "enum": [
+        "report",
+        "warn",
+        "enforce"
+      ]
+    },
+    "ExecutionState": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "preparing",
+        "running",
+        "verifying",
+        "awaiting_review",
+        "accepted",
+        "changes_requested",
+        "rejected",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "AgentProfile": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "agent_id": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "adapter_type": {
+          "type": "string"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "available",
+            "busy",
+            "offline"
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "agent_id",
+        "display_name",
+        "adapter_type",
+        "capabilities",
+        "status",
+        "created_at",
+        "updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "AgentSession": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "agent_id": {
+          "type": "string"
+        },
+        "issued_at": {
+          "type": "string"
+        },
+        "expires_at": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "expired",
+            "revoked"
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "session_id",
+        "agent_id",
+        "issued_at",
+        "expires_at",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "GateSpec": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "command",
+        "required"
+      ],
+      "additionalProperties": false
+    },
+    "TaskAssignment": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "assignment_id": {
+          "type": "string"
+        },
+        "task_id": {
+          "type": "string"
+        },
+        "sprint_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "goal": {
+          "type": "string"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "read_scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "write_scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "required_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GateSpec"
+          }
+        },
+        "base_commit": {
+          "type": "string"
+        },
+        "assigned_agent_id": {
+          "type": "string"
+        },
+        "reviewer_agent_id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "assignment_id",
+        "task_id",
+        "sprint_id",
+        "title",
+        "goal",
+        "dependencies",
+        "read_scopes",
+        "write_scopes",
+        "acceptance_criteria",
+        "required_capabilities",
+        "gates",
+        "base_commit",
+        "assigned_agent_id",
+        "reviewer_agent_id",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ExecutionEvent": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "event_id": {
+          "type": "string"
+        },
+        "event_type": {
+          "type": "string"
+        },
+        "execution_id": {
+          "type": "string"
+        },
+        "assignment_id": {
+          "type": "string"
+        },
+        "agent_id": {
+          "type": "string"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "occurred_at": {
+          "type": "string"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "event_type",
+        "execution_id",
+        "assignment_id",
+        "agent_id",
+        "session_id",
+        "occurred_at",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "ArtifactManifest": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "execution_id": {
+          "type": "string"
+        },
+        "base_commit": {
+          "type": "string"
+        },
+        "head_commit": {
+          "type": "string"
+        },
+        "tree_id": {
+          "type": "string"
+        },
+        "changed_files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name_status": {
+          "type": "string"
+        },
+        "patch_path": {
+          "type": "string"
+        },
+        "stdout_path": {
+          "type": "string"
+        },
+        "stderr_path": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "execution_id",
+        "base_commit",
+        "head_commit",
+        "tree_id",
+        "changed_files",
+        "name_status",
+        "patch_path",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "GateResult": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "exit_code": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "output_path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "command",
+        "required",
+        "passed",
+        "exit_code",
+        "output_path"
+      ],
+      "additionalProperties": false
+    },
+    "VerificationEvidence": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "evidence_id": {
+          "type": "string"
+        },
+        "execution_id": {
+          "type": "string"
+        },
+        "scope_passed": {
+          "type": "boolean"
+        },
+        "changed_files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "out_of_scope_files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GateResult"
+          }
+        },
+        "router_report": {
+          "type": "object",
+          "additionalProperties": {}
+        },
+        "created_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "evidence_id",
+        "execution_id",
+        "scope_passed",
+        "changed_files",
+        "out_of_scope_files",
+        "gates",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ReviewRequest": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "review_id": {
+          "type": "string"
+        },
+        "execution_id": {
+          "type": "string"
+        },
+        "assignment_id": {
+          "type": "string"
+        },
+        "worker_agent_id": {
+          "type": "string"
+        },
+        "worker_session_id": {
+          "type": "string"
+        },
+        "reviewer_agent_id": {
+          "type": "string"
+        },
+        "evidence_id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "expires_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "review_id",
+        "execution_id",
+        "assignment_id",
+        "worker_agent_id",
+        "worker_session_id",
+        "reviewer_agent_id",
+        "evidence_id",
+        "created_at",
+        "expires_at"
+      ],
+      "additionalProperties": false
+    },
+    "ReviewVerdict": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "event_id": {
+          "type": "string"
+        },
+        "review_id": {
+          "type": "string"
+        },
+        "execution_id": {
+          "type": "string"
+        },
+        "reviewer_agent_id": {
+          "type": "string"
+        },
+        "reviewer_session_id": {
+          "type": "string"
+        },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "approve",
+            "request_changes",
+            "reject"
+          ]
+        },
+        "comments": {
+          "type": "string"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "occurred_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "review_id",
+        "execution_id",
+        "reviewer_agent_id",
+        "reviewer_session_id",
+        "verdict",
+        "comments",
+        "evidence_refs",
+        "occurred_at"
+      ],
+      "additionalProperties": false
+    },
+    "GuardFinding": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "finding_id": {
+          "type": "string"
+        },
+        "execution_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "info",
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "category": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "acknowledged",
+            "resolved"
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "finding_id",
+        "execution_id",
+        "severity",
+        "category",
+        "message",
+        "status",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "ExecutionSummary": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "execution_id": {
+          "type": "string"
+        },
+        "assignment_id": {
+          "type": "string"
+        },
+        "worker_agent_id": {
+          "type": "string"
+        },
+        "worker_session_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/ExecutionState"
+        },
+        "worktree_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "branch_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pid": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "started_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "completed_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "failure_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "execution_id",
+        "assignment_id",
+        "worker_agent_id",
+        "worker_session_id",
+        "state",
+        "worktree_path",
+        "branch_name",
+        "pid",
+        "started_at",
+        "updated_at",
+        "completed_at",
+        "failure_code"
+      ],
+      "additionalProperties": false
+    },
+    "PlanManifest": {
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "goal": {
+                "type": "string"
+              },
+              "depends_on": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "scope": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "read_scopes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "write_scopes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "acceptance_criteria": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "required_capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "gates": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/GateSpec"
+                }
+              },
+              "agent_id": {
+                "type": "string"
+              },
+              "reviewer_agent_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "tasks"
+      ],
+      "additionalProperties": false
+    },
+    "AdapterConfig": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "dual-router",
+            "mock"
+          ]
+        },
+        "python_executable": {
+          "type": "string"
+        },
+        "router_path": {
+          "type": "string"
+        },
+        "planner_model": {
+          "type": "string"
+        },
+        "executor_model": {
+          "type": "string"
+        },
+        "timeout_ms": {
+          "type": "number"
+        },
+        "termination_grace_ms": {
+          "type": "number"
+        },
+        "env_allowlist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mock_changes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Deterministic CI fixture writes; ignored by the live dual-router adapter."
+        }
+      },
+      "required": [
+        "mode",
+        "python_executable",
+        "router_path",
+        "timeout_ms",
+        "termination_grace_ms",
+        "env_allowlist"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://agent-synthetix.local/schemas/control-plane/1.0"
+}

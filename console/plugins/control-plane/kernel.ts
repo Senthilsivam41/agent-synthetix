@@ -22,7 +22,7 @@ import {
 import { runAdapter } from "./adapter";
 import { collectGitEvidence, assertCleanWorkspace, commitExecutionChanges, createExecutionWorktree, removeExecutionWorktree, resolveCommit, runGates } from "./git";
 import { anyScopeOverlap, filesOutsideScopes, listRepositoryFiles, normalizeScope } from "./scope";
-import { parseExecutionEvent, parseReviewVerdict } from "./schemas";
+import { parseExecutionEvent, parseReviewVerdict, validateContract } from "./schemas";
 import { ControlPlaneStore } from "./store";
 
 type Row = Record<string, unknown>;
@@ -99,7 +99,11 @@ export class ControlPlaneKernel {
 
   async plan(manifestPath: string) {
     const absolute = path.resolve(this.workspaceRoot, manifestPath);
-    const manifest = YAML.parse(await fsp.readFile(absolute, "utf8")) as PlanManifest;
+    const manifest = validateContract<PlanManifest>(
+      "PlanManifest",
+      YAML.parse(await fsp.readFile(absolute, "utf8")),
+      "plan manifest",
+    );
     if (!manifest?.tasks?.length) throw new Error("manifest must contain at least one task");
     const taskIds = new Set(manifest.tasks.map((task) => task.id));
     if (taskIds.size !== manifest.tasks.length || taskIds.has("")) throw new Error("task ids must be non-empty and unique");
@@ -177,7 +181,11 @@ export class ControlPlaneKernel {
       this.store.transaction(() => this.store.db.prepare("UPDATE executions SET worktree_path=?,branch_name=?,started_at=?,updated_at=? WHERE execution_id=?")
         .run(worktreePath, branchName, now(), now(), executionId));
       this.changeState(executionId, assignment, session, "running");
-      const config = { ...(await this.adapterConfig()), ...adapterOverride } as AdapterConfig;
+      const config = validateContract<AdapterConfig>(
+        "AdapterConfig",
+        { ...(await this.adapterConfig()), ...adapterOverride },
+        "adapter configuration",
+      );
       const result = await runAdapter(config, assignment, worktreePath, (pid) => {
         this.store.transaction(() => this.store.db.prepare("UPDATE executions SET pid=?,updated_at=? WHERE execution_id=?").run(pid, now(), executionId));
       });
@@ -546,7 +554,11 @@ export class ControlPlaneKernel {
   }
 
   private async adapterConfig() {
-    const config = JSON.parse(await fsp.readFile(path.join(this.store.root, "control-plane.config.json"), "utf8")) as AdapterConfig;
+    const config = validateContract<AdapterConfig>(
+      "AdapterConfig",
+      JSON.parse(await fsp.readFile(path.join(this.store.root, "control-plane.config.json"), "utf8")),
+      "adapter configuration",
+    );
     config.router_path = path.resolve(this.workspaceRoot, config.router_path);
     return config;
   }

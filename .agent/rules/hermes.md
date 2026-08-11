@@ -14,12 +14,25 @@ Host-agnostic instruction set. Profiles live under [`.agent/rules/hermes/`](./he
 | `/hermes approve <id>` | **2** | Pending → approved (`approved: true` equivalent) |
 | `/hermes publish <id>` | **2** | Approved → `site/_posts/` + refresh curated index |
 | `/hermes queue <source>` | **2** | Copy memo/file into pending for the gate |
-| `/hermes blog …` | 3 | Scaffold only until Phase 3 |
+| `/hermes blog <slug\|date/slug\|--memo path>` | **3** | [BlogHermes](./hermes/blog/profile.md) — memo diff → pending post |
 | `/hermes thread …` | 6 | Scaffold only |
 | `/hermes report …` | 6 | Scaffold only |
 | `/hermes status` | any | Summarize memos / pending / approved / staged posts / config |
 
-Load [hermes/gate.md](./hermes/gate.md) for preview / approve / publish / queue algorithms.
+Load [hermes/gate.md](./hermes/gate.md) for preview / approve / publish / queue. Load [hermes/blog/profile.md](./hermes/blog/profile.md) for `/hermes blog`.
+
+## Phase 3 pipeline (smoke)
+
+```
+/hermes research <topic>
+  → memo under research/memos/
+/hermes blog <date>/<slug>   # or --memo <path>
+  → pending/<post_date>-<slug>.md
+/hermes preview <id>
+/hermes approve <id>
+/hermes publish <id>
+  → site/_posts/…  then PR/push to content branch
+```
 
 ## Init (idempotent)
 

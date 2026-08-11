@@ -7,7 +7,7 @@ import { orchestratorFsApi } from "./plugins/orchestratorFsApi";
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 export default defineConfig({
-  plugins: [react(), orchestratorFsApi({ workspaceRoot: rootDir })],
+  plugins: [react(), ...(process.env.VITEST ? [] : [orchestratorFsApi({ workspaceRoot: rootDir })])],
   server: {
     port: 5173,
     fs: { allow: [rootDir] },

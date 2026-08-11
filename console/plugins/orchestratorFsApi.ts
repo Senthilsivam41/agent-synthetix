@@ -4,6 +4,9 @@ import type { Plugin, Connect } from "vite";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { ControlPlaneKernel } from "./control-plane/kernel";
 import { WorkspaceLock } from "./control-plane/store";
+import { applyClarificationAnswers, atomicWriteText, inspectPlan, parseClarifications, parseJsonLines, readText } from "./orchestratorFiles";
+import { RuntimeFileWatcher } from "./runtimeWatcher";
+import YAML from "yaml";
 
 type Options = { workspaceRoot: string };
 
@@ -45,11 +48,27 @@ async function ensureCommands(root: string) {
   }
 }
 
+async function enqueueCommand(root: string, kernel: ControlPlaneKernel | null, command: string, args: Record<string, unknown> = {}) {
+  await ensureCommands(root);
+  if (!command.startsWith("/orchestrate")) throw new Error('command must start with "/orchestrate"');
+  const id = `cmd-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const item = { id, command, args, enqueued_at: new Date().toISOString() };
+  await fs.appendFile(path.join(root, "commands", "pending.jsonl"), `${JSON.stringify(item)}\n`, "utf8");
+  await kernel?.recordCommand(command, args, "pending", id);
+  return item;
+}
+
 export function orchestratorFsApi(opts: Options): Plugin {
   const root = orchRoot(opts.workspaceRoot);
   let kernel: ControlPlaneKernel | null = null;
   let ready: Promise<unknown> | null = null;
   let lock: WorkspaceLock | null = null;
+  let watcher: RuntimeFileWatcher | null = null;
+  const eventClients = new Set<ServerResponse>();
+  const broadcast = (areas: string[]) => {
+    const message = `event: runtime_changed\ndata: ${JSON.stringify({ areas, occurred_at: new Date().toISOString() })}\n\n`;
+    for (const client of eventClients) client.write(message);
+  };
 
   const handler: Connect.NextHandleFunction = async (req, res, next) => {
     if (!req.url?.startsWith("/api/orchestrator")) return next();
@@ -57,6 +76,18 @@ export function orchestratorFsApi(opts: Options): Plugin {
     try {
       const url = new URL(req.url, "http://localhost");
       const pathname = url.pathname;
+
+      if (req.method === "GET" && pathname === "/api/orchestrator/events") {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache, no-transform");
+        res.setHeader("Connection", "keep-alive");
+        res.flushHeaders?.();
+        res.write(`event: ready\ndata: ${JSON.stringify({ connected_at: new Date().toISOString() })}\n\n`);
+        eventClients.add(res);
+        req.once("close", () => eventClients.delete(res));
+        return;
+      }
 
       if (pathname.startsWith("/api/orchestrator/v1/")) {
         if (!kernel || !ready) throw new Error("control-plane kernel is not initialized");
@@ -172,24 +203,56 @@ export function orchestratorFsApi(opts: Options): Plugin {
 
       if (req.method === "GET" && pathname === "/api/orchestrator/plan") {
         const planPath = path.join(root, "plans", "project-plan.md");
-        let text = "";
-        try {
-          text = await fs.readFile(planPath, "utf8");
-        } catch {
-          text = "";
-        }
-        return sendJson(res, 200, { exists: Boolean(text), text });
+        const text = await readText(planPath);
+        const statusText = await readText(path.join(root, "plans", "status.yaml"), "status: collecting\n");
+        const workflowStatus = String((YAML.parse(statusText) as { status?: unknown } | null)?.status ?? "collecting");
+        return sendJson(res, 200, { exists: Boolean(text), workflow_status: workflowStatus, ...inspectPlan(text) });
       }
 
       if (req.method === "GET" && pathname === "/api/orchestrator/clarifications") {
         const p = path.join(root, "plans", "clarifications.md");
-        let text = "";
-        try {
-          text = await fs.readFile(p, "utf8");
-        } catch {
-          text = "";
-        }
-        return sendJson(res, 200, { text });
+        const text = await readText(p, "# Clarifications\n\n## Open\n\n_(none yet)_\n\n## Answered\n\n_(none yet)_\n");
+        return sendJson(res, 200, { text, ...parseClarifications(text) });
+      }
+
+      if (req.method === "POST" && pathname === "/api/orchestrator/clarifications/answers") {
+        const body = JSON.parse(await readBody(req)) as { answers?: Array<{ question?: unknown; answer?: unknown }> };
+        const answers = (body.answers ?? []).map((item) => ({ question: String(item.question ?? "").trim(), answer: String(item.answer ?? "").trim() })).filter((item) => item.question && item.answer);
+        if (!answers.length) return sendJson(res, 400, { error: "at least one non-empty clarification answer is required" });
+        const target = path.join(root, "plans", "clarifications.md");
+        const current = await readText(target, "# Clarifications\n\n## Open\n\n_(none yet)_\n\n## Answered\n\n_(none yet)_\n");
+        const openQuestions = parseClarifications(current).open;
+        if (!answers.some((answer) => openQuestions.includes(answer.question))) return sendJson(res, 409, { error: "answers did not match any open clarification" });
+        const updated = applyClarificationAnswers(current, answers);
+        await atomicWriteText(target, updated);
+        return sendJson(res, 200, { ok: true, ...parseClarifications(updated) });
+      }
+
+      if (req.method === "POST" && pathname === "/api/orchestrator/clarifications/ask") {
+        const command = await enqueueCommand(root, kernel, "/orchestrate ask");
+        return sendJson(res, 202, { ok: true, command });
+      }
+
+      if (req.method === "POST" && pathname === "/api/orchestrator/plan/draft") {
+        const command = await enqueueCommand(root, kernel, "/orchestrate propose");
+        return sendJson(res, 202, { ok: true, command });
+      }
+
+      if (req.method === "POST" && pathname === "/api/orchestrator/plan/revise") {
+        const body = JSON.parse(await readBody(req)) as { feedback?: unknown };
+        const feedback = String(body.feedback ?? "").trim();
+        if (!feedback) return sendJson(res, 400, { error: "revision feedback is required" });
+        const command = await enqueueCommand(root, kernel, "/orchestrate revise", { feedback });
+        return sendJson(res, 202, { ok: true, command });
+      }
+
+      if (req.method === "POST" && pathname === "/api/orchestrator/plan/approve") {
+        const text = await readText(path.join(root, "plans", "project-plan.md"));
+        if (!text) return sendJson(res, 409, { error: "project plan does not exist" });
+        const plan = inspectPlan(text);
+        if (!plan.can_approve) return sendJson(res, 409, { error: plan.scope_warnings[0] ?? `plan status ${plan.status} is not ready for approval`, plan });
+        const command = await enqueueCommand(root, kernel, "/orchestrate approve");
+        return sendJson(res, 202, { ok: true, command, plan });
       }
 
       if (req.method === "GET" && pathname === "/api/orchestrator/sprints") {
@@ -212,27 +275,12 @@ export function orchestratorFsApi(opts: Options): Plugin {
       }
 
       if (req.method === "POST" && pathname === "/api/orchestrator/commands") {
-        await ensureCommands(root);
         const body = JSON.parse(await readBody(req)) as {
           command: string;
           args?: Record<string, unknown>;
         };
-        if (!body.command?.startsWith("/orchestrate")) {
-          return sendJson(res, 400, {
-            error: 'command must start with "/orchestrate"',
-          });
-        }
-        const id = `cmd-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const line = JSON.stringify({
-          id,
-          command: body.command,
-          args: body.args ?? {},
-          enqueued_at: new Date().toISOString(),
-        });
-        const pending = path.join(root, "commands", "pending.jsonl");
-        await fs.appendFile(pending, `${line}\n`, "utf8");
-        await kernel?.recordCommand(body.command, body.args ?? {}, "pending", id);
-        return sendJson(res, 200, { ok: true, id, queued: body.command });
+        const command = await enqueueCommand(root, kernel, body.command, body.args ?? {});
+        return sendJson(res, 200, { ok: true, id: command.id, queued: command.command });
       }
 
       if (req.method === "GET" && pathname === "/api/orchestrator/commands/pending") {
@@ -246,6 +294,15 @@ export function orchestratorFsApi(opts: Options): Plugin {
           .filter(Boolean)
           .map((line) => JSON.parse(line));
         return sendJson(res, 200, { items });
+      }
+
+      if (req.method === "GET" && pathname === "/api/orchestrator/commands/activity") {
+        await ensureCommands(root);
+        const [pending, processed] = await Promise.all([
+          readText(path.join(root, "commands", "pending.jsonl")),
+          readText(path.join(root, "commands", "processed.jsonl")),
+        ]);
+        return sendJson(res, 200, { pending: parseJsonLines(pending), processed: parseJsonLines(processed) });
       }
 
       return sendJson(res, 404, { error: "not found" });
@@ -262,8 +319,28 @@ export function orchestratorFsApi(opts: Options): Plugin {
       lock.acquire("vite-console");
       kernel = new ControlPlaneKernel(opts.workspaceRoot);
       ready = kernel.init();
+      void ready.then(() => {
+        try {
+          watcher = new RuntimeFileWatcher(root, broadcast);
+          watcher.start();
+        } catch (error) {
+          watcher = null;
+          server.config.logger.warn(`Runtime filesystem watching is unavailable: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }, (error) => {
+        server.config.logger.error(`Control-plane initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+      });
       server.middlewares.use(handler);
+      const heartbeat = setInterval(() => {
+        for (const client of eventClients) client.write(": keepalive\n\n");
+      }, 20_000);
+      heartbeat.unref();
       server.httpServer?.once("close", () => {
+        clearInterval(heartbeat);
+        watcher?.close();
+        watcher = null;
+        for (const client of eventClients) client.end();
+        eventClients.clear();
         kernel?.close();
         kernel = null;
         lock?.release();

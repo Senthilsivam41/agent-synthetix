@@ -31,7 +31,7 @@ describe("subprocess adapter", () => {
   it("redacts allowlisted secret values from persisted output", async () => {
     const secret = "do-not-persist-this-value"; process.env.SYNTHETIX_TEST_SECRET = secret;
     const { root, executable } = await fixture(`#!/bin/sh\nprintf '{"status":"completed","value":"%s"}\\n' "$SYNTHETIX_TEST_SECRET"\nprintf '%s\\n' "$SYNTHETIX_TEST_SECRET" >&2\n`);
-    const result = await runAdapter(config(executable, { env_allowlist: ["SYNTHETIX_TEST_SECRET"] }), assignment, root);
+    const result = await runAdapter(config(executable, { env_allowlist: ["SYNTHETIX_TEST_SECRET"], timeout_ms: 2_000 }), assignment, root);
     expect(result.status).toBe("completed");
     expect(`${result.stdout}${result.stderr}`).not.toContain(secret);
   });

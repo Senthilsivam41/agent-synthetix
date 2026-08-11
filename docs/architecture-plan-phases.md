@@ -152,9 +152,11 @@ First profile to actually exercise the Phase 0 directory format and Phase 2 publ
 BlogHermes consumes ResearchHermes's diffed memo as input (not raw research) — this is what makes the pipeline compound rather than three independent generators. Output target: Jekyll frontmatter-compliant Markdown written directly to `.autoclaw/hermes/pending/`, so it enters the Phase 2 approval flow unmodified. Tone default: `technical / first_person / standard / public` (Phase 0 schema) — matches your existing writing voice from the ADR practice.
 
 ### Action Items
-- [ ] BlogHermes profile consumes ResearchHermes memo diff as primary input
-- [ ] Output conforms to Jekyll frontmatter schema (title, date, tags, slug)
-- [ ] End-to-end smoke: ResearchHermes → BlogHermes draft → approve → PR → Pages live
+- [x] BlogHermes profile consumes ResearchHermes memo diff as primary input — [blog/profile.md](../.agent/rules/hermes/blog/profile.md)
+- [x] Output conforms to Jekyll frontmatter schema (title, date, tags, slug) — pending contract + Phase 2 publish map
+- [x] End-to-end smoke path documented: ResearchHermes → BlogHermes → approve → publish → `content` / Pages — see `.agent/rules/hermes.md` §Phase 3 pipeline
+
+**Phase 3 ship note (2026-08-09):** Agent-executable BlogHermes rule landed. Live Pages still needs repo Settings → Pages → Actions + merge to `content`.
 
 ---
 

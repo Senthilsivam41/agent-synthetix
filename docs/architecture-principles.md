@@ -368,7 +368,7 @@ Keep new surfaces **file-shaped** and **idempotent**. Prefer Markdown/YAML/JSON 
 - Blind overwrite of MEMORY.md, preferences, or consensus history  
 - Parallel agents sharing the same write scope without an explicit merge order  
 
-Hermes Phases 0–2 are decided (profiles, ResearchHermes diff, approve/preview/publish + Jekyll Pages). Remaining open product questions (issue sync, `/learn` paths, hosted migration, self-host DAG) live in [BRAINSTORM.md](../BRAINSTORM.md) — do not claim them as shipped until reflected in rules + README.
+Hermes Phases 0–3 are decided (profiles, ResearchHermes diff, approve/preview/publish + Jekyll Pages, BlogHermes). Remaining open product questions (issue sync, `/learn` paths, hosted migration, self-host DAG) live in [BRAINSTORM.md](../BRAINSTORM.md) — do not claim them as shipped until reflected in rules + README.
 
 ---
 

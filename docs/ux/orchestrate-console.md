@@ -1,6 +1,6 @@
 # Orchestrate Control Console — UX Spec
 
-**Status:** Design specification (not implemented as a runtime UI)  
+**Status:** Implemented research-preview runtime UI (Intake → Clarify → Plan → Approve → Sprints)
 **Surface:** AutoClaw Orchestrate Control Console  
 **Audience:** Project owners / tech leads (primary), operators watching sprints (secondary)  
 **Maps to:** Soft-gate flow in [README.md](../../README.md) and file contracts under `.autoclaw/orchestrator/`

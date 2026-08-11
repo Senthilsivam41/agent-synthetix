@@ -1,6 +1,6 @@
 # Future changes
 
-**Updated:** 2026-08-08  
+**Updated:** 2026-08-11
 Prioritized backlog for Orchestrate console + soft-gate productization. Control-plane sequence: [Product Roadmap](../docs/product-roadmap.md). Hermes content sequence: [Architecture plan phases](../docs/architecture-plan-phases.md).
 
 ## P0 — Product foundation
@@ -12,21 +12,22 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 - [x] Implement the dual-router subprocess adapter and mock vertical slice
 - [x] Add deterministic contract guarding before dynamic coalitions
 - [ ] Run the live dual-router smoke test when credentials are explicitly available
-- [ ] Expand the minimal schema representation into generated, strict JSON Schema validation
+- [x] Add a credential-gated live dual-router smoke harness using a temporary repository
+- [x] Expand the minimal schema representation into generated, strict JSON Schema validation
 
 ## P1 — Console screens
 
-1. **Clarify** — load/save `plans/clarifications.md`; queue `/orchestrate ask`; answer form (max 1–5 Qs)
-2. **Plan Review** — render `plans/project-plan.md`; queue `/orchestrate propose` / `revise`
-3. **Approve** — consequence panel; queue `/orchestrate approve`; reflect `approved` → `manifested`
-4. **Sprints** — list `sprints/sprint-*.yaml`; soft-gate banner; revive enqueue
+1. [x] **Clarify** — load/save `plans/clarifications.md`; queue `/orchestrate ask`; answer form (max 1–5 Qs)
+2. [x] **Plan Review** — render `plans/project-plan.md`; queue `/orchestrate propose` / `revise`
+3. [x] **Approve** — consequence panel; queue `/orchestrate approve`; reflect `approved` → `manifested`
+4. [x] **Sprints** — list `sprints/sprint-*.yaml`; soft-gate banner; revive enqueue
 
 ## P2 — Console platform
 
-- Poll/watch `.autoclaw/` so board refreshes without reload
-- Command outbox UI: show pending/processed queue; “copy slash-cmd” helper
-- Markdown renderer for plan body (safe subset)
-- YAML parse for status + sprint rows (already depend on `yaml` package)
+- [x] Watch `.autoclaw/` so board refreshes without reload
+- [x] Command outbox UI: show pending/processed queue; “copy slash-cmd” helper
+- [x] Markdown renderer for plan body (safe subset)
+- [x] YAML parse for status + sprint rows (already depend on `yaml` package)
 - A11y pass per `docs/ux/orchestrate-console.md` (focus, reduced motion, dropzone picker)
 - Light theme tokens (`data-theme="light"`)
 
@@ -41,7 +42,7 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 - [x] Phase 0 — directory profiles + tone/platforms
 - [x] Phase 1 — ResearchHermes + semantic/lexical diff + sources.json
 - [x] Phase 2 — `/hermes approve` + preview + Jekyll `site/` + Pages workflow
-- [ ] Phase 3 — BlogHermes from research diffs
+- [x] Phase 3 — BlogHermes from research diffs → pending
 - [ ] First live Pages deploy — enable Actions source + merge `site/**` to `content`
 - [ ] Phase 4 — `/learn` multi-tool paths
 - [ ] Phase 5 — Linear/GitHub Issues → manifest sync

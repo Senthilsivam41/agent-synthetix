@@ -1,8 +1,8 @@
 # Current status
 
-**Updated:** 2026-08-08  
+**Updated:** 2026-08-11
 **Branch:** `codex/summarise-agentsynthetix-changes`  
-**Last slice:** Hermes Phase 2 (approval gate + Jekyll Pages)
+**Last slice:** Hermes Phase 3 (BlogHermes)
 
 ## Product shape
 
@@ -11,19 +11,17 @@
 - Optional UI: Vite console under `console/`
 - Hermes content profiles: `.agent/rules/hermes.md` + `.agent/rules/hermes/<profile>/`
 
-## Hermes (architecture plan Phases 0–2)
+## Hermes (architecture plan Phases 0–3)
 
 | Piece | Status |
 |---|---|
-| Directory-per-profile scaffold (research/blog/thread/report) | Done |
-| ResearchHermes slug + semantic bullet diff algorithm | Done |
-| `sources.json` + memo / publish contracts | Done — `schemas/hermes-*.md` |
-| `/hermes init` / `research` | Done |
-| `/hermes preview` / `approve` / `publish` / `queue` | Done — `hermes/gate.md` |
-| Jekyll `site/` + curated index | Done |
-| Pages Actions on `content` branch | Done — `.github/workflows/pages.yml` |
-| Blog / Thread / Report generators | Scaffold only (Phases 3 / 6) |
-| Live Pages deploy | Needs repo Settings → Pages → Actions + push `content` |
+| Directory-per-profile scaffold | Done |
+| ResearchHermes + semantic/lexical diff | Done |
+| Gate: preview / approve / publish / queue | Done |
+| Jekyll `site/` + Pages Actions (`content`) | Done |
+| BlogHermes (`/hermes blog` → pending from memo diff) | Done |
+| Thread / Report generators | Scaffold (Phase 6) |
+| Live Pages deploy | Needs Settings → Pages → Actions + push `content` |
 | OpenClaw hosted runner | Later (Phase 7) |
 
 Layering: Hermes profile (host-agnostic) → local host agent today → `.autoclaw` (vector, KG, MEMORY.md). See `docs/architecture-plan-phases.md` and `docs/hermes-vs-openclaw-layers.svg`.
@@ -59,8 +57,10 @@ Present in `.agent/rules/orchestrate.md`:
 | Vite + React + TS scaffold | Done |
 | Kernel + collision + evidence + dual-router mock | Done |
 | Intake + Sprints screens | Done |
-| Clarify / Plan / Approve | Placeholders |
-| Live dual-router smoke | Pending credentials |
+| Clarify / Plan / Approve | Done |
+| Pending / processed commands + filesystem refresh | Done |
+| Generated strict JSON Schema validation | Done |
+| Live dual-router smoke harness | Done; credential-gated run skipped on 2026-08-11 because no supported credential was available |
 
 ### Run console
 
@@ -71,19 +71,18 @@ cd console && npm install && npm run dev
 
 ## Known gaps
 
-1. Clarify, Plan, and Approve console screens are not built
-2. Live dual-router smoke pending credentials
-3. Guard schema → full JSON Schema validation before developer preview
-4. Hermes Phase 3+ (BlogHermes → auto pending drafts)
-5. First live Pages deploy (enable Actions + `content` branch)
-6. `.autoclaw/` is local runtime (gitignored) — do not commit
+1. Execute the live dual-router smoke when a supported model credential is explicitly available
+2. Add browser-level interaction coverage for the guided console workflow
+3. Hermes Phase 4+ (`/learn` paths) / Phase 6 Thread+Report
+4. First live Pages deploy (enable Actions + `content` branch)
+5. `.autoclaw/` is local runtime (gitignored) — do not commit
 
-## Try Hermes Phase 1–2
+## Try Hermes Phase 1–3
 
 In agent chat (not terminal):
 
 1. `/hermes init`
 2. `/hermes research local-first agent memory`
-3. `/hermes queue research:<date>/<slug>` (or copy `hermes/examples/pending-sample.md` into pending)
+3. `/hermes blog <date>/<slug>` (or `--memo <path>`)
 4. `/hermes preview <id>` → `/hermes approve <id>` → `/hermes publish <id>`
 5. Open PR / push `site/**` to branch `content` for Pages deploy

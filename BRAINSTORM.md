@@ -112,7 +112,7 @@ Decisions made → captured in README.md. These are the **open unknowns** needin
 
 1. ~~ResearchHermes + diff engine~~ — Phase 1 done
 2. ~~Approval gate + publish to GitHub Pages~~ — Phase 2 done
-3. BlogHermes output format
+3. ~~BlogHermes output format~~ — Phase 3 done (`/hermes blog` → pending)
 4. `/learn` multi-tool ingestion (all 5 sources)
 5. Linear/GitHub Issues manifest sync
 6. ThreadHermes + ReportHermes
