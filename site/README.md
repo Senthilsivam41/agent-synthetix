@@ -15,7 +15,9 @@ Committed static site for approved Hermes content.
 - Branch: `content` (pushes that touch `site/**`)
 - Source directory: `./site`
 
-Enable **GitHub Pages → GitHub Actions** in repo settings before the first deploy.
+The first deployment requires **GitHub Pages → GitHub Actions**. The release operator enables the repository Pages API with `build_type: workflow`, pushes the reviewed release commit to `content`, waits for `Deploy Hermes Pages`, and verifies `https://senthilsivam41.github.io/agent-synthetix/`.
+
+Rollback is a normal content-branch revert: move `content` back to the previously verified commit and push without force. The workflow publishes that commit as a new Pages deployment.
 
 ## Local preview (optional)
 
