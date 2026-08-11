@@ -2,7 +2,7 @@
 
 ## Objective
 
-Complete the next four backlog items without changing the control-plane authority model: bring the localhost console to a verified WCAG 2.1 AA baseline, make `/learn` source discovery and provenance executable for five supported tools, make ThreadHermes and ReportHermes production-ready rule profiles, and publish the already-approved Hermes Jekyll site through the existing `content`-branch workflow.
+Complete the next four backlog items without changing the control-plane authority model: bring the localhost console to a verified WCAG 2.2 AA baseline, make `/learn` source discovery and provenance executable for five supported tools, make ThreadHermes and ReportHermes production-ready rule profiles, and publish the already-approved Hermes Jekyll site through the existing `content`-branch workflow.
 
 ## Boundaries
 

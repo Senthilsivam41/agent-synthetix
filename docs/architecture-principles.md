@@ -261,6 +261,8 @@ Use Orchestrate for multi-agent parallelism across a repo; use MAteam for a disc
 
 **Config:** `.autoclaw/vector/config.json` (optional; validated defaults if absent).
 
+**Phase 4 source adapters:** `.agent/rules/intelligence/sources.yaml` is the versioned registry for AutoClaw, Claude Code, Claude Desktop exports, Cursor, Kiro, and Gemini. Each adapter declares consent, discovery paths, format, kept/discarded signal, unsupported behavior, and confidence. Ingestion is read-only and incremental: it redacts before hashing or persistence, attributes records to a workspace, stores provenance and classification evidence, deduplicates by content fingerprint, and advances a source watermark only after an atomic successful write. Unknown classifications remain `unknown`; they are never promoted to “kept” by inference.
+
 ### 5.6 AutoBuild — Workflow engine
 
 **Purpose:** Cron and one-shot build/test/deploy workflows with auditable run logs.
@@ -368,7 +370,7 @@ Keep new surfaces **file-shaped** and **idempotent**. Prefer Markdown/YAML/JSON 
 - Blind overwrite of MEMORY.md, preferences, or consensus history  
 - Parallel agents sharing the same write scope without an explicit merge order  
 
-Hermes Phases 0–3 are decided (profiles, ResearchHermes diff, approve/preview/publish + Jekyll Pages, BlogHermes). Remaining open product questions (issue sync, `/learn` paths, hosted migration, self-host DAG) live in [BRAINSTORM.md](../BRAINSTORM.md) — do not claim them as shipped until reflected in rules + README.
+Hermes Phases 0–4 and 6 are implemented as agent-executable rules (profiles, ResearchHermes diff, approve/preview/publish + Jekyll Pages, BlogHermes, `/learn` source adapters, ThreadHermes, and ReportHermes). Remaining open product questions (issue sync, hosted migration, self-host DAG) live in [BRAINSTORM.md](../BRAINSTORM.md) — do not claim them as shipped until reflected in rules + README.
 
 ---
 

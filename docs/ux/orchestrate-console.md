@@ -286,15 +286,17 @@ Cards are **not** used in heroes or for static content. Interactive panels (Appr
 
 ## 11. Out of scope
 
-- Shipping a React/VS Code/web app in this repo
+- Remote authentication and hosted multi-user operation
 - Hermes publish approval UX
 - GitHub Pages marketing/reader site
 - Changing DAG / bin-pack algorithms
 
 ## 12. Verification checklist
 
-- [ ] Five soft-gate steps + Sprint Board specified with wireframes
-- [ ] Every primary CTA maps to a slash-command or documented file edit
-- [ ] Soft gate and `approved` → `manifested` transition documented
-- [ ] A11y requirements include non-drag file intake and Approve consequences
-- [ ] Tokens avoid purple-gradient / cream-terracotta / broadsheet defaults ([design-tokens.md](./design-tokens.md))
+- [x] Five soft-gate steps + Sprint Board specified with wireframes
+- [x] Every primary CTA maps to a slash-command or documented file edit
+- [x] Soft gate and `approved` → `manifested` transition documented
+- [x] A11y requirements include non-drag file intake and Approve consequences
+- [x] Tokens avoid purple-gradient / cream-terracotta / broadsheet defaults ([design-tokens.md](./design-tokens.md))
+
+Implementation evidence: [WCAG 2.2 AA accessibility pass](./accessibility-audit-2026-08-11.md).
