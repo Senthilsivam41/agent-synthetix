@@ -2,8 +2,8 @@
 
 title: AutoClaw Hermes
 description: Research, blog, thread, and report notes from Hermes profiles.
-baseurl: ""
-url: ""
+baseurl: "/agent-synthetix"
+url: "https://senthilsivam41.github.io"
 
 markdown: kramdown
 highlighter: rouge
