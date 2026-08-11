@@ -36,15 +36,38 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select,
+summary {
   font: inherit;
 }
 
 button:focus-visible,
 a:focus-visible,
-input:focus-visible {
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+.main:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
+}
+
+.skip-link {
+  position: absolute;
+  z-index: 100;
+  top: var(--space-3);
+  left: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
 }
 
 .shell {
@@ -98,6 +121,7 @@ input:focus-visible {
 
 .main {
   min-height: 20rem;
+  scroll-margin-top: var(--space-5);
 }
 
 .actions {
@@ -470,4 +494,27 @@ textarea:focus-visible {
   .command-columns { grid-template-columns: 1fr; }
   .revision-panel { grid-template-columns: 1fr; }
   .command-activity[open] { width: 100%; }
+}
+
+@media (max-width: 22rem) {
+  .shell { padding-inline: var(--space-3); }
+  .metric-grid { grid-template-columns: 1fr; }
+  .step-rail { gap: var(--space-3); }
+  .actions .btn { width: 100%; }
+  .catalog { font-size: 0.8rem; }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --color-fg-muted: #c3ced8;
+    --color-border: #718196;
+    --color-border-strong: #9aabbc;
+  }
+  a { text-decoration: underline; }
+  .btn, textarea, .approve-panel, .banner { border-width: 2px; }
+}
+
+@media (forced-colors: active) {
+  .step-rail button[aria-current="step"]::after { background: Highlight; }
+  .guard, .state, .finding { forced-color-adjust: auto; }
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type IntakeFile } from "../lib/api";
 
 type Props = {
@@ -9,6 +9,7 @@ export function IntakeScreen({ onToast }: Props) {
   const [files, setFiles] = useState<IntakeFile[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(async () => {
     const data = await api.intake();
@@ -64,33 +65,29 @@ export function IntakeScreen({ onToast }: Props) {
 
       <div
         className="dropzone"
+        role="group"
+        aria-labelledby="intake-drop-title"
+        aria-describedby="intake-drop-formats"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
           void onFiles(e.dataTransfer.files);
         }}
       >
-        <p>Drop files here or add a note</p>
-        <p className="muted">.md .txt .pdf images audio</p>
-        <label className="btn btn-primary" style={{ display: "inline-block" }}>
-          Choose files
-          <input
-            type="file"
-            multiple
-            hidden
-            disabled={busy}
-            onChange={(e) => void onFiles(e.target.files)}
-          />
-        </label>
+        <p id="intake-drop-title">Drop files here or choose files</p>
+        <p id="intake-drop-formats" className="muted">Accepted formats: Markdown, text, PDF, images, and audio.</p>
+        <button type="button" className="btn btn-primary" disabled={busy} onClick={() => fileInput.current?.click()}>Choose files</button>
+        <input ref={fileInput} type="file" multiple hidden disabled={busy} aria-label="Intake files" onChange={(e) => void onFiles(e.target.files)} />
       </div>
 
       {error && (
-        <p style={{ color: "var(--color-danger)" }} role="alert">
+        <p className="error-text" role="alert">
           {error}
         </p>
       )}
 
       <table className="catalog">
+        <caption className="sr-only">Intake files</caption>
         <thead>
           <tr>
             <th>File</th>

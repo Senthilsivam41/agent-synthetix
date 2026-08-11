@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, watchRuntime } from "./lib/api";
 import { CommandActivity } from "./components/CommandActivity";
 import { IntakeScreen } from "./screens/IntakeScreen";
@@ -23,6 +23,8 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [runtimeVersion, setRuntimeVersion] = useState(0);
+  const mainRef = useRef<HTMLElement>(null);
+  const previousStep = useRef<StepId>(step);
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -32,6 +34,13 @@ export default function App() {
   const goToSprints = useCallback(() => setStep("sprints"), []);
 
   useEffect(() => watchRuntime(() => setRuntimeVersion((version) => version + 1)), []);
+
+  useEffect(() => {
+    if (previousStep.current !== step) {
+      previousStep.current = step;
+      mainRef.current?.focus();
+    }
+  }, [step]);
 
   useEffect(() => {
     api
@@ -46,6 +55,7 @@ export default function App() {
 
   return (
     <div className="shell">
+      <a className="skip-link" href="#workflow-main">Skip to workflow</a>
       <header>
         <div className="shell-heading"><div><h1 className="brand">AutoClaw Orchestrate</h1><p className="muted">Guided control surface · {statusText || "loading status…"}{pendingCount > 0 ? ` · ${pendingCount} pending slash-command(s)` : ""}</p></div><CommandActivity refreshKey={runtimeVersion} onPendingCount={updatePendingCount} /></div>
       </header>
@@ -75,7 +85,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="main">
+      <main className="main" id="workflow-main" ref={mainRef} tabIndex={-1}>
         {step === "intake" && (
           <IntakeScreen
             onToast={notify}
