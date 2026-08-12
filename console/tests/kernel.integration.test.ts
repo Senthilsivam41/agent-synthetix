@@ -85,4 +85,27 @@ describe("control-plane vertical slice", () => {
     expect(kernel.status().findings.some((finding) => String(finding.category) === "scope_violation")).toBe(true);
     kernel.close();
   });
+
+  it("requires a fresh registered adapter capability for capability-constrained work", async () => {
+    const root = await repository([{ id: "capability-task", write_scopes: ["src/**"], required_capabilities: ["special-tool"], agent_id: "worker", reviewer_agent_id: "reviewer" }]);
+    const kernel = new ControlPlaneKernel(root); await kernel.init();
+    kernel.registerAdapter({ adapter_type: "fixture", display_name: "Fixture", version: "1", capabilities: ["special-tool"] });
+    kernel.registerAgent({ agent_id: "worker", display_name: "Worker", adapter_type: "fixture" }); kernel.registerAgent({ agent_id: "reviewer", display_name: "Reviewer" });
+    const worker = kernel.createSession("worker");
+    const planned = await kernel.plan("manifest.yaml");
+    const execution = await kernel.run(planned.assignments[0]!.assignment_id, worker.session_id, { mode: "mock", mock_changes: { "src/capability.txt": "ok\n" } });
+    expect(execution.state).toBe("awaiting_review");
+    kernel.close();
+  });
+
+  it("fails closed when a required adapter capability snapshot is stale", async () => {
+    const root = await repository([{ id: "stale-task", write_scopes: ["src/**"], required_capabilities: ["special-tool"], agent_id: "worker", reviewer_agent_id: "reviewer" }]);
+    const kernel = new ControlPlaneKernel(root); await kernel.init();
+    kernel.registerAdapter({ adapter_type: "stale-fixture", display_name: "Stale fixture", version: "1", capabilities: ["special-tool"], ttl_seconds: -1 });
+    kernel.registerAgent({ agent_id: "worker", display_name: "Worker", adapter_type: "stale-fixture" }); kernel.registerAgent({ agent_id: "reviewer", display_name: "Reviewer" });
+    const worker = kernel.createSession("worker");
+    const planned = await kernel.plan("manifest.yaml");
+    await expect(kernel.run(planned.assignments[0]!.assignment_id, worker.session_id, { mode: "mock" })).rejects.toThrow(/capability snapshot is stale/);
+    kernel.close();
+  });
 });

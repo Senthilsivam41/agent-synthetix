@@ -1,8 +1,8 @@
 # Current status
 
 **Updated:** 2026-08-11
-**Branch:** `codex/hermes-agent-architecture-adrs`
-**Last slice:** Proposed Hermes Agent integration architecture, ADRs, and implementation plan (documentation only)
+**Branch:** `codex/hermes-h0-h1-worker-adapters`
+**Last slice:** Hermes H0/H1 compatibility, worker adapters, registrations, and capability snapshots
 
 ## Product shape
 
@@ -52,6 +52,8 @@ Present in `.agent/rules/orchestrate.md`:
 - North Star: weekly verified agent tasks completed without human repair
 - Proposed adapter expansion: Hermes Agent as a governed worker behind the kernel boundary; see `docs/proposals/hermes-agent-integration-architecture.md` and ADRs 0002–0005
 - Proposal status does not change shipped capabilities: the Hermes Agent adapter, event ingress, A2A edge, and profile promotion are not implemented
+- H0/H1 implementation is present: compatibility inspection, isolated runtime manifest/rollback, common mock/dual-router adapter interface, adapter registration migration, and stale capability enforcement
+- H2 remains gated: Hermes Agent is not enabled as a managed execution adapter; local installation is v0.17 and below the pinned v0.20 target
 
 ## Console (`console/`)
 

@@ -1,14 +1,16 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import YAML from "yaml";
 import {
   SCHEMA_VERSION,
   STATE_TRANSITIONS,
   TERMINAL_STATES,
   type AdapterConfig,
+  type AdapterRegistration,
   type AgentProfile,
   type AgentSession,
+  type CapabilitySnapshot,
   type ExecutionEvent,
   type ExecutionState,
   type ExecutionSummary,
@@ -19,7 +21,7 @@ import {
   type TaskAssignment,
   type VerificationEvidence,
 } from "./contracts";
-import { runAdapter } from "./adapter";
+import { createWorkerAdapter } from "./adapter";
 import { collectGitEvidence, assertCleanWorkspace, commitExecutionChanges, createExecutionWorktree, removeExecutionWorktree, resolveCommit, runGates } from "./git";
 import { anyScopeOverlap, filesOutsideScopes, listRepositoryFiles, normalizeScope } from "./scope";
 import { parseExecutionEvent, parseReviewVerdict, validateContract } from "./schemas";
@@ -66,9 +68,43 @@ export class ControlPlaneKernel {
       };
       await fsp.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
     }
+    this.ensureBuiltInAdapters();
     await this.importLegacy();
     await this.store.exportPendingEvents();
     return this.status();
+  }
+
+  registerAdapter(input: { adapter_id?: string; adapter_type: string; display_name: string; version: string; config_ref?: string | null; health?: AdapterRegistration["health"]; capabilities?: string[]; source?: CapabilitySnapshot["source"]; ttl_seconds?: number }) {
+    const timestamp = now();
+    const capabilities = [...new Set(input.capabilities ?? [])].sort();
+    const registration: AdapterRegistration = validateContract("AdapterRegistration", {
+      schema_version: SCHEMA_VERSION,
+      adapter_id: input.adapter_id ?? input.adapter_type,
+      adapter_type: input.adapter_type,
+      display_name: input.display_name,
+      version: input.version,
+      config_ref: input.config_ref ?? null,
+      health: input.health ?? "healthy",
+      created_at: timestamp,
+      updated_at: timestamp,
+    }, "adapter registration");
+    const snapshot: CapabilitySnapshot = validateContract("CapabilitySnapshot", {
+      schema_version: SCHEMA_VERSION,
+      snapshot_id: randomUUID(),
+      adapter_id: registration.adapter_id,
+      adapter_type: registration.adapter_type,
+      adapter_version: registration.version,
+      capabilities,
+      captured_at: timestamp,
+      expires_at: new Date(Date.parse(timestamp) + (input.ttl_seconds ?? 3600) * 1000).toISOString(),
+      source: input.source ?? "declared",
+      fingerprint: createHash("sha256").update(JSON.stringify(capabilities)).digest("hex"),
+    }, "capability snapshot");
+    this.store.transaction(() => {
+      this.store.upsertAdapterRegistration(registration);
+      this.store.insertCapabilitySnapshot(snapshot);
+    });
+    return { registration, snapshot };
   }
 
   registerAgent(input: { agent_id?: string; display_name: string; adapter_type?: string; capabilities?: string[] }) {
@@ -152,7 +188,9 @@ export class ControlPlaneKernel {
     if (assignment.assigned_agent_id === "unassigned") throw new Error("assignment must name an agent before execution");
     const session = this.requireActiveSession(sessionId, assignment.assigned_agent_id);
     const worker = this.requireAgent(assignment.assigned_agent_id);
-    const missingCapabilities = assignment.required_capabilities.filter((capability) => !worker.capabilities.includes(capability));
+    const snapshotCapabilities = assignment.required_capabilities.length ? this.currentAdapterCapabilities(worker.adapter_type) : [];
+    const availableCapabilities = new Set([...worker.capabilities, ...snapshotCapabilities]);
+    const missingCapabilities = assignment.required_capabilities.filter((capability) => !availableCapabilities.has(capability));
     if (missingCapabilities.length) throw new Error(`agent ${worker.agent_id} lacks required capabilities: ${missingCapabilities.join(", ")}`);
     this.requireAgent(assignment.reviewer_agent_id);
     if (assignment.reviewer_agent_id === assignment.assigned_agent_id) throw new Error("reviewer must be a different agent");
@@ -186,9 +224,10 @@ export class ControlPlaneKernel {
         { ...(await this.adapterConfig()), ...adapterOverride },
         "adapter configuration",
       );
-      const result = await runAdapter(config, assignment, worktreePath, (pid) => {
+      const adapter = createWorkerAdapter(config);
+      const result = await adapter.run({ config, assignment, worktreePath, onPid: (pid) => {
         this.store.transaction(() => this.store.db.prepare("UPDATE executions SET pid=?,updated_at=? WHERE execution_id=?").run(pid, now(), executionId));
-      });
+      } });
       const artifactRoot = path.join(this.store.root, "artifacts", executionId);
       await fsp.mkdir(artifactRoot, { recursive: true });
       const stdoutPath = path.join(artifactRoot, "adapter.stdout.log");
@@ -472,6 +511,24 @@ export class ControlPlaneKernel {
     const row = this.store.db.prepare("SELECT profile_json FROM agents WHERE agent_id=?").get(agentId) as Row | undefined;
     if (!row) throw new Error(`unknown agent ${agentId}`);
     return parseJson<AgentProfile>(row.profile_json);
+  }
+
+  private currentAdapterCapabilities(adapterType: string) {
+    const row = this.store.latestCapabilitySnapshot(adapterType);
+    if (!row?.snapshot_json) throw new Error(`adapter ${adapterType} has no capability snapshot`);
+    const snapshot = validateContract<CapabilitySnapshot>("CapabilitySnapshot", JSON.parse(row.snapshot_json), "capability snapshot");
+    if (Date.parse(snapshot.expires_at) <= Date.now()) throw new Error(`adapter ${adapterType} capability snapshot is stale`);
+    return snapshot.capabilities;
+  }
+
+  private ensureBuiltInAdapters() {
+    const builtIns = [
+      { adapter_id: "mock", adapter_type: "mock", display_name: "Mock worker", version: "builtin", capabilities: ["workspace-write", "deterministic-fixture"] },
+      { adapter_id: "dual-router", adapter_type: "dual-router", display_name: "Dual LLM Router", version: "builtin", capabilities: ["workspace-write", "planner-executor", "dual-router"] },
+    ];
+    for (const adapter of builtIns) {
+      if (!this.store.adapterRegistration(adapter.adapter_type)) this.registerAdapter({ ...adapter, source: "declared" });
+    }
   }
 
   private requireSession(sessionId: string) {

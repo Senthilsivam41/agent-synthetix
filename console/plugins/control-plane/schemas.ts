@@ -14,7 +14,9 @@ type ContractName =
   | "ExecutionSummary"
   | "GuardFinding"
   | "PlanManifest"
-  | "AdapterConfig";
+  | "AdapterConfig"
+  | "AdapterRegistration"
+  | "CapabilitySnapshot";
 
 type SchemaBundle = {
   $id: string;

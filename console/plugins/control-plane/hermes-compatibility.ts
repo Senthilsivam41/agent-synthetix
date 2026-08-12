@@ -148,6 +148,7 @@ export async function prepareHermesRuntime(manifestPath: string, profileHome: st
 export async function activateHermesRuntime(manifestPath: string, profileHome: string) {
   const manifest = await readHermesRuntimeManifest(manifestPath, profileHome);
   if (!manifest.candidate_executable) throw new Error("no Hermes candidate is prepared");
+  try { await fsp.access(manifest.candidate_executable); } catch { throw new Error(`prepared Hermes candidate does not exist: ${manifest.candidate_executable}`); }
   return writeHermesRuntimeManifest(manifestPath, {
     ...manifest, active_executable: manifest.candidate_executable, previous_executable: manifest.active_executable,
     candidate_executable: null, activated_at: new Date().toISOString(), rolled_back_at: null,

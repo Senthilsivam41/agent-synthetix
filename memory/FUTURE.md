@@ -60,8 +60,8 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 
 - [x] Record proposed worker boundary, runtime isolation, evidence trust, and controlled-learning ADRs
 - [x] Write phased implementation plan and issue-sized checklist
-- [ ] H0 — compatibility, pinned runtime, and rollback baseline
-- [ ] H1 — common `WorkerAdapter` and capability snapshots
+- [x] H0 — compatibility, pinned runtime, and rollback baseline (compatibility/manifest implemented; target runtime remains disabled until conformance)
+- [x] H1 — common `WorkerAdapter` and capability snapshots
 - [ ] H2 — local Hermes worktree vertical slice
 - [ ] H3 — authenticated events and grounded citation evidence
 - [ ] H4 — API and console operator surfaces

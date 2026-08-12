@@ -2,15 +2,15 @@
 
 ## H0 — Compatibility
 
-- [ ] H0.1 Record installed/target versions and capability snapshot
-- [ ] H0.2 Establish isolated install and rollback procedure
-- [ ] Checkpoint H0 reviewed
+- [x] H0.1 Record installed/target versions and capability snapshot
+- [x] H0.2 Establish isolated install and rollback procedure
+- [x] Checkpoint H0 reviewed
 
 ## H1 — Common worker contract
 
-- [ ] H1.1 Introduce `WorkerAdapter`; preserve mock and dual-router behavior
-- [ ] H1.2 Add adapter registrations and capability snapshots
-- [ ] Checkpoint H1 passes existing conformance suites
+- [x] H1.1 Introduce `WorkerAdapter`; preserve mock and dual-router behavior
+- [x] H1.2 Add adapter registrations and capability snapshots
+- [x] Checkpoint H1 passes existing conformance suites
 
 ## H2 — Local Hermes vertical slice
 
