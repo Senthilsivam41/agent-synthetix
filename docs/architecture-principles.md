@@ -178,8 +178,11 @@ Use Orchestrate for multi-agent parallelism across a repo; use MAteam for a disc
 
 **Intake (soft gate, before manifest):** File-drop under `orchestrator/intake/` → `/orchestrate intake` → `ask` → `propose` (writes `plans/project-plan.md`) → human review → `/orchestrate approve` (generates `manifests/<slug>.yaml`). `/orchestrate plan` does not refuse when no approved plan exists.
 
+**GitHub Issues (opt-in, before DAG):** If `.autoclaw/orchestrator/github-issues.yaml` is `enabled: true`, `plan` pulls open issues create-only into the manifest (`gh-<number>`), skips issues without a write scope, and never rewrites issue bodies. Named assignment comments and accepted/done comment+close are status-only write-back. Missing `gh` is reported; plan continues. Contract: [schemas/github-issues-sync.md](../schemas/github-issues-sync.md).
+
 **Algorithm (plan):**
 
+0. **Issue sync** — create-only merge of open GitHub Issues when enabled; skip when unconfigured.
 1. **Parse & validate** — IDs unique, `depends_on` resolvable, scopes non-empty; optional `required_capabilities`.
 2. **Build DAG** — Kahn’s algorithm; fail loud on cycles.
 3. **Level assignment** — topological levels; same level ⇒ candidates for parallel execution.
@@ -332,7 +335,7 @@ Use Orchestrate for multi-agent parallelism across a repo; use MAteam for a disc
 3. /orchestrate propose       → plans/project-plan.md for human review
 4. /orchestrate approve       → generate manifests/<slug>.yaml
    (soft gate: hand-authored manifests still allowed without approve)
-5. /orchestrate plan          → DAG + scope-isolated sprints
+5. /orchestrate plan          → optional GitHub Issues create-only pull, then DAG + scope-isolated sprints
 6. /index-code + /learn       → grounded context for assignees
 7. /kdream start              → background memory + TODO watch
 8. /orchestrate assign N      → briefs + context packs + inbox task_assign
@@ -370,7 +373,7 @@ Keep new surfaces **file-shaped** and **idempotent**. Prefer Markdown/YAML/JSON 
 - Blind overwrite of MEMORY.md, preferences, or consensus history  
 - Parallel agents sharing the same write scope without an explicit merge order  
 
-Hermes Phases 0–4 and 6 are implemented as agent-executable rules (profiles, ResearchHermes diff, approve/preview/publish + Jekyll Pages, BlogHermes, `/learn` source adapters, ThreadHermes, and ReportHermes). Remaining open product questions (issue sync, hosted migration, self-host DAG) live in [BRAINSTORM.md](../BRAINSTORM.md) — do not claim them as shipped until reflected in rules + README.
+Hermes Phases 0–6 are implemented as agent-executable rules (profiles, ResearchHermes diff, approve/preview/publish + Jekyll Pages, BlogHermes, `/learn` source adapters, ThreadHermes, ReportHermes, and GitHub Issues create-only sync). Remaining open product questions (hosted migration, self-host DAG) live in [BRAINSTORM.md](../BRAINSTORM.md) — do not claim them as shipped until reflected in rules + README.
 
 ---
 

@@ -45,7 +45,7 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 - [x] Phase 3 — BlogHermes from research diffs → pending
 - [x] First live Pages deploy — Actions run `31512674632`, live at https://senthilsivam41.github.io/agent-synthetix/
 - [x] Phase 4 — `/learn` multi-tool paths
-- [ ] Phase 5 — Linear/GitHub Issues → manifest sync
+- [x] Phase 5 — GitHub Issues → manifest sync (create-only pull; status comment + close)
 - [x] Phase 6 — ThreadHermes + ReportHermes
 - [ ] Phase 7 — OpenClaw hosted runner + Postgres migration for vector/KG
 

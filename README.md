@@ -73,7 +73,7 @@ Reads task manifests, builds a dependency DAG, generates sprint plans, and assig
 /orchestrate propose      — Draft human-readable plans/project-plan.md
 /orchestrate approve      — Approve plan → generate task manifest
 /orchestrate revise       — Revise plan from feedback (version bump)
-/orchestrate plan         — Build DAG → assign sprints from manifest YAML
+/orchestrate plan         — Pull open GitHub Issues (create-only, if enabled) → DAG → sprints
 /orchestrate assign <N>   — Assign sprint N to agents (writes context packs)
 /orchestrate status       — Show progress + stalled agents
 /orchestrate review <N>   — Trigger quality gates and review for sprint N
@@ -231,6 +231,7 @@ Drop text/files (including audio or a transcript) into `.autoclaw/orchestrator/i
 /orchestrate plan
 /orchestrate assign 1
 ```
+When `.autoclaw/orchestrator/github-issues.yaml` is `enabled: true`, `plan` pulls open GitHub Issues into the manifest create-only (`gh-<number>`). Issues without a write scope are skipped. Assignment comments and done/accepted comment+close are status-only; issue bodies are never rewritten. See [schemas/github-issues-sync.md](./schemas/github-issues-sync.md).
 
 For Cursor Cloud / agent-environment notes, see [AGENTS.md](./AGENTS.md).
 
@@ -248,6 +249,8 @@ For Cursor Cloud / agent-environment notes, see [AGENTS.md](./AGENTS.md).
   kdream/memory/MEMORY.md      ← long-lived project memory (append-only)
   orchestrator/
     config.yaml                ← global settings
+    github-issues.yaml         ← opt-in GitHub Issues sync (create-only pull)
+    issues/                    ← skipped.yaml + writeback.jsonl
     board.json / board.md      ← active tasks + sprint status
     intake/                    ← user file-drop inputs + INDEX.md
     plans/                     ← project-plan.md, clarifications, status.yaml

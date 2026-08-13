@@ -203,6 +203,18 @@
         },
         "created_at": {
           "type": "string"
+        },
+        "github_issue": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "github_url": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
@@ -725,6 +737,20 @@
               },
               "reviewer_agent_id": {
                 "type": "string"
+              },
+              "github_issue": {
+                "type": "number"
+              },
+              "github_url": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "github_issue",
+                  "intake",
+                  "hand"
+                ]
               }
             },
             "required": [

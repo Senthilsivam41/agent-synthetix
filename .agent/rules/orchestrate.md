@@ -51,6 +51,19 @@ Also drain pending slash-command intents from `.autoclaw/orchestrator/commands/p
    - `.autoclaw/orchestrator/plans/status.yaml` — `status: collecting`
    - `.autoclaw/orchestrator/plans/clarifications.md` — empty open/answered sections
    - `.autoclaw/orchestrator/commands/` + empty `pending.jsonl` / `processed.jsonl` if missing
+   - `.autoclaw/orchestrator/issues/` (skipped.yaml / writeback.jsonl live here after plan)
+   - `.autoclaw/orchestrator/github-issues.yaml` if missing — create-only GitHub Issues sync stub:
+
+     ```yaml
+     schema_version: "1.0"
+     enabled: true
+     owner: null
+     repo: null
+     state: open
+     limit: 100
+     ```
+
+     Do **not** overwrite an existing `github-issues.yaml`. Kernel `init` does not create this file; missing file means the kernel skips issue sync.
 4. If a spec `tasks.md` exists (e.g., `.kiro/specs/*/tasks.md`), offer to generate a manifest from it.
 5. Confirm: "Orchestrator initialized. Drop inputs in `.autoclaw/orchestrator/intake/` then `/orchestrate intake`, or create a manifest and run `/orchestrate plan`."
 
@@ -173,6 +186,17 @@ If `plans/status.yaml` exists and `status` ∉ {`approved`, `manifested`}, print
 ### Input
 Read the manifest YAML from the specified path (default: first `.yaml` in `manifests/`).
 
+### GitHub Issues sync (create-only, before DAG)
+If `.autoclaw/orchestrator/github-issues.yaml` exists and `enabled: true`, pull **open** issues into the manifest **before** parse/validate. Contract: [schemas/github-issues-sync.md](../../schemas/github-issues-sync.md). Kernel `plan` does the same.
+
+1. Run `gh issue list --state open --limit <config.limit> --json number,title,body,url,labels,state` (add `--repo owner/repo` when config sets both). Never `gh issue edit`.
+2. Map each issue to task id `gh-<number>`. Write scope comes from YAML frontmatter `write_scopes`/`scope` or labels `scope:<glob>`. Optional frontmatter `agent_id` / `reviewer_agent_id` / `depends_on` (or body `depends on #N`).
+3. **Create-only merge:** if a task already exists with the same `id` or `github_issue`, leave name, scopes, and `depends_on` unchanged. Append only new tasks.
+4. Issues with no parseable write scope are **not** added. Write `.autoclaw/orchestrator/issues/skipped.yaml` with `reason: missing_scope`.
+5. If `gh` is missing, unauthenticated, or the list call fails: print a one-line diagnostic and continue with the existing manifest. Never hard-fail `plan`. Never invent issues.
+
+If the yaml is missing or `enabled` is not true, skip sync (do not invoke `gh`).
+
 ### Algorithm
 
 **Phase 1: Parse & Validate**
@@ -289,6 +313,14 @@ Confirm: "Generated {N} sprints for {M} tasks across {A} agents. Critical path: 
    `payload.intelligence` (the JSON the generator printed, including
    `context_file`) so MCP-aware runners can pull it without re-reading the brief.
 6. Confirm: "Sprint {N} assigned to {agents}. Assignment + context packs written. Each agent should read their assignment (and its context pack) and begin work."
+7. **GitHub write-back (status only):** for each assigned task with `github_issue` and a named agent (not `unassigned`), append an issue comment. Do **not** rewrite the issue body and do **not** add assignment labels. Skip when `.autoclaw/orchestrator/issues/writeback.jsonl` already has fingerprint `assign:<number>:<sprint>:<agent>` with `status: ok`. Comment body:
+
+   ```
+   Sprint `<sprint-id>` assigned to `<agent-id>` (task `<task-id>`).
+   <!-- orchestrate:assign gh-<number> <sprint-id> <agent-id> -->
+   ```
+
+   Command: `gh issue comment <number> --body <text>` (plus `--repo` when configured). If `gh` fails, log `{ kind: assign, status: failed, diagnostic }` to `issues/writeback.jsonl` and continue; do not fail assign. Kernel `plan` already comments when it creates named assignments.
 
 **Stalled-agent handling.** If any WA-N slot is mapped to an agent whose last heartbeat is older than `autoclaw.orchestrate.heartbeatStallSeconds` (default `300`), the assign step skips that slot's task and emits a `sprint-{N}-stalled.json` sidecar next to the sprint YAML listing the excluded slots. Surface this to the user verbatim and suggest re-running `/orchestrate assign {N}` once the stalled agent recovers.
 
@@ -381,6 +413,14 @@ answer to "wake my stalled peer."
 5. If `CRITICAL_ISSUES`: update sprint status to `review` and list required fixes.
 6. If `APPROVED` or `MINOR_ISSUES`: update sprint status to `approved`.
 7. Confirm: "Sprint {N} review complete. Verdict: {verdict}. {details}"
+8. **GitHub write-back on APPROVED:** for each task in the sprint with `github_issue` whose work is accepted, append a done comment then **close** the issue (`gh issue close <number> --reason completed`). Never silent close. Never `gh issue edit`. Skip when `writeback.jsonl` already has fingerprint `done:<number>:<execution-id-or-task-id>` with `status: ok`. Comment body:
+
+   ```
+   Task `<task-id>` accepted by the control plane (execution `<execution-id-or-sprint>`). Closing.
+   <!-- orchestrate:done gh-<number> <execution-id-or-sprint> -->
+   ```
+
+   If `gh` fails, log `{ kind: done, status: failed }` and continue; do not fail the review. Kernel `ingestVerdict` approve performs the same comment+close.
 
 **Remote-agent path (informational).** The OpenClaw HTTP bridge also exposes `POST /api/v1/consensus/{task_id}/evaluate` as a parallel path for remote agents to trigger consensus evaluation programmatically. The local skill flow above continues to work as before; the endpoint is purely additive.
 
@@ -395,7 +435,8 @@ answer to "wake my stalled peer."
    - Run full test suite.
 3. Update sprint status to `merged`.
 4. Check if next sprint's dependencies are now met.
-5. Confirm: "Sprint {N} merged. Sprint {N+1} is now unblocked. Run `/orchestrate assign {N+1}` to continue."
+5. For any remaining `github_issue` tasks in this sprint that were not already closed (no `done:` fingerprint in `issues/writeback.jsonl`), perform the same comment + `gh issue close` as review step 8. Still never rewrite issue bodies.
+6. Confirm: "Sprint {N} merged. Sprint {N+1} is now unblocked. Run `/orchestrate assign {N+1}` to continue."
 
 ---
 

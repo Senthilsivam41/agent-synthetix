@@ -23,6 +23,19 @@ import {
 } from "./contracts";
 import { createWorkerAdapter } from "./adapter";
 import { collectGitEvidence, assertCleanWorkspace, commitExecutionChanges, createExecutionWorktree, removeExecutionWorktree, resolveCommit, runGates } from "./git";
+import {
+  appendWritebackLog,
+  assignmentComment,
+  createGhCliClient,
+  doneComment,
+  mergeCreateOnly,
+  parseIssueToTask,
+  readGitHubIssuesConfig,
+  readWritebackLog,
+  skippedIssuesPath,
+  writebackFingerprint,
+  type GitHubIssuesClient,
+} from "./github-issues";
 import { anyScopeOverlap, filesOutsideScopes, listRepositoryFiles, normalizeScope } from "./scope";
 import { parseExecutionEvent, parseReviewVerdict, validateContract } from "./schemas";
 import { ControlPlaneStore } from "./store";
@@ -49,10 +62,12 @@ function asExecution(row: Row): ExecutionSummary {
 export class ControlPlaneKernel {
   readonly workspaceRoot: string;
   readonly store: ControlPlaneStore;
+  private readonly issuesClient?: GitHubIssuesClient;
 
-  constructor(workspaceRoot: string) {
+  constructor(workspaceRoot: string, options: { issuesClient?: GitHubIssuesClient } = {}) {
     this.workspaceRoot = path.resolve(workspaceRoot);
     this.store = new ControlPlaneStore(this.workspaceRoot);
+    this.issuesClient = options.issuesClient;
   }
 
   close() { this.store.close(); }
@@ -135,6 +150,7 @@ export class ControlPlaneKernel {
 
   async plan(manifestPath: string) {
     const absolute = path.resolve(this.workspaceRoot, manifestPath);
+    const issueSync = await this.syncGitHubIssues(absolute);
     const manifest = validateContract<PlanManifest>(
       "PlanManifest",
       YAML.parse(await fsp.readFile(absolute, "utf8")),
@@ -172,6 +188,8 @@ export class ControlPlaneKernel {
           gates: (task.gates ?? []).map((gate) => ({ ...gate, required: gate.required !== false })), base_commit: baseCommit,
           assigned_agent_id: task.agent_id ?? "unassigned", reviewer_agent_id: task.reviewer_agent_id ?? "unassigned",
           created_at: now(),
+          github_issue: task.github_issue ?? null,
+          github_url: task.github_url ?? null,
         });
       }
     }
@@ -180,7 +198,8 @@ export class ControlPlaneKernel {
       for (const assignment of assignments) insert.run(assignment.assignment_id, assignment.task_id, assignment.sprint_id, JSON.stringify(assignment), "planned", assignment.created_at);
     });
     await this.writePlanViews(assignments);
-    return { base_commit: baseCommit, assignments, dependency_assignments: Object.fromEntries(taskToAssignment) };
+    await this.writebackAssignments(assignments);
+    return { base_commit: baseCommit, assignments, dependency_assignments: Object.fromEntries(taskToAssignment), issue_sync: issueSync };
   }
 
   async run(assignmentId: string, sessionId: string, adapterOverride?: Partial<AdapterConfig>) {
@@ -326,6 +345,7 @@ export class ControlPlaneKernel {
     await this.store.exportPendingEvents();
     await this.refreshSprintStatuses();
     await this.writeStatusViews();
+    if (target === "accepted") await this.writebackDone(assignment, verdict.execution_id);
     return this.execution(verdict.execution_id);
   }
 
@@ -689,6 +709,71 @@ export class ControlPlaneKernel {
         };
         statement.run(assignment.assignment_id, taskId, sprintId, JSON.stringify(assignment), "legacy", created);
       }
+    }
+  }
+
+  async syncGitHubIssues(manifestPath: string) {
+    const config = await readGitHubIssuesConfig(this.store.root);
+    if (!config?.enabled) return { status: "skipped" as const, added: 0, skipped: 0, diagnostic: "github-issues sync is disabled or unconfigured" };
+    const client = this.issuesClient ?? createGhCliClient({ owner: config.owner, repo: config.repo, limit: config.limit });
+    let issues;
+    try {
+      issues = await client.listOpenIssues();
+    } catch (error) {
+      return { status: "unavailable" as const, added: 0, skipped: 0, diagnostic: error instanceof Error ? error.message : String(error) };
+    }
+    const incoming = [];
+    const skipped = [];
+    for (const issue of issues) {
+      const parsed = parseIssueToTask(issue);
+      if (parsed.task) incoming.push(parsed.task);
+      if (parsed.skipped) skipped.push(parsed.skipped);
+    }
+    const current = (YAML.parse(await fsp.readFile(manifestPath, "utf8")) ?? { tasks: [] }) as PlanManifest;
+    if (!Array.isArray(current.tasks)) current.tasks = [];
+    const merged = mergeCreateOnly(current, incoming);
+    if (merged.added.length) await fsp.writeFile(manifestPath, YAML.stringify(merged.manifest), "utf8");
+    await fsp.mkdir(path.dirname(skippedIssuesPath(this.store.root)), { recursive: true });
+    await fsp.writeFile(skippedIssuesPath(this.store.root), YAML.stringify({ generated_at: now(), skipped }), "utf8");
+    return { status: "ok" as const, added: merged.added.length, skipped: skipped.length, diagnostic: null as string | null };
+  }
+
+  private async writebackAssignments(assignments: TaskAssignment[]) {
+    for (const assignment of assignments) {
+      if (!assignment.github_issue || assignment.assigned_agent_id === "unassigned") continue;
+      const fingerprint = writebackFingerprint("assign", assignment.github_issue, `${assignment.sprint_id}:${assignment.assigned_agent_id}`);
+      await this.writeback("assign", assignment.github_issue, fingerprint, async (client) => {
+        await client.comment(assignment.github_issue!, assignmentComment({
+          githubIssue: assignment.github_issue!, sprintId: assignment.sprint_id, agentId: assignment.assigned_agent_id, taskId: assignment.task_id,
+        }));
+      });
+    }
+  }
+
+  private async writebackDone(assignment: TaskAssignment, executionId: string) {
+    if (!assignment.github_issue) return;
+    const fingerprint = writebackFingerprint("done", assignment.github_issue, executionId);
+    await this.writeback("done", assignment.github_issue, fingerprint, async (client) => {
+      await client.comment(assignment.github_issue!, doneComment({ githubIssue: assignment.github_issue!, taskId: assignment.task_id, executionId }));
+      await client.close(assignment.github_issue!);
+    });
+  }
+
+  private async writeback(kind: "assign" | "done", githubIssue: number, fingerprint: string, action: (client: GitHubIssuesClient) => Promise<void>) {
+    const log = await readWritebackLog(this.store.root);
+    if (log.some((row) => row.fingerprint === fingerprint && row.status === "ok")) return;
+    const config = await readGitHubIssuesConfig(this.store.root);
+    if (!this.issuesClient && !config?.enabled) return;
+    const client = this.issuesClient ?? createGhCliClient({ owner: config?.owner, repo: config?.repo, limit: config?.limit });
+    if (!client) {
+      await appendWritebackLog(this.store.root, { kind, github_issue: githubIssue, fingerprint, at: now(), status: "failed", diagnostic: "no GitHub issues client" });
+      return;
+    }
+    try {
+      await action(client);
+      await appendWritebackLog(this.store.root, { kind, github_issue: githubIssue, fingerprint, at: now(), status: "ok" });
+    } catch (error) {
+      await appendWritebackLog(this.store.root, { kind, github_issue: githubIssue, fingerprint, at: now(), status: "failed", diagnostic: error instanceof Error ? error.message : String(error) });
     }
   }
 

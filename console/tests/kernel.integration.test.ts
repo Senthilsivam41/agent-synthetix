@@ -5,6 +5,8 @@ import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import { SCHEMA_VERSION } from "../plugins/control-plane/contracts";
 import { ControlPlaneKernel } from "../plugins/control-plane/kernel";
+import type { GitHubIssue } from "../plugins/control-plane/github-issues";
+import YAML from "yaml";
 
 const roots: string[] = [];
 function git(root: string, args: string[]) { return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim(); }
@@ -106,6 +108,88 @@ describe("control-plane vertical slice", () => {
     const worker = kernel.createSession("worker");
     const planned = await kernel.plan("manifest.yaml");
     await expect(kernel.run(planned.assignments[0]!.assignment_id, worker.session_id, { mode: "mock" })).rejects.toThrow(/capability snapshot is stale/);
+    kernel.close();
+  });
+});
+
+describe("GitHub Issues plan sync and write-back", () => {
+  it("creates tasks from open issues, comments on assign, and closes on accept", async () => {
+    const comments: Array<{ number: number; body: string }> = [];
+    const closed: number[] = [];
+    const issues: GitHubIssue[] = [{
+      number: 42,
+      title: "Add left module",
+      body: "---\nwrite_scopes:\n  - src/left/**\nagent_id: worker\nreviewer_agent_id: reviewer\n---\n",
+      html_url: "https://github.com/acme/demo/issues/42",
+      state: "open",
+      labels: [],
+    }, {
+      number: 7,
+      title: "No scope",
+      body: "Cannot plan this yet.",
+      html_url: "https://github.com/acme/demo/issues/7",
+      state: "open",
+      labels: ["bug"],
+    }];
+    const root = await repository([{ id: "seed", write_scopes: ["docs/**"] }]);
+    const kernel = new ControlPlaneKernel(root, {
+      issuesClient: {
+        listOpenIssues: async () => issues,
+        comment: async (number, body) => { comments.push({ number, body }); },
+        close: async (number) => { closed.push(number); },
+      },
+    });
+    await kernel.init();
+    await fsp.writeFile(path.join(root, ".autoclaw", "orchestrator", "github-issues.yaml"), "schema_version: \"1.0\"\nenabled: true\n", "utf8");
+    const manifestRel = path.join(".autoclaw", "orchestrator", "manifests", "from-issues.yaml");
+    await fsp.writeFile(path.join(root, manifestRel), "tasks: []\n", "utf8");
+    kernel.registerAgent({ agent_id: "worker", display_name: "Worker" });
+    kernel.registerAgent({ agent_id: "reviewer", display_name: "Reviewer" });
+    const worker = kernel.createSession("worker");
+    const reviewer = kernel.createSession("reviewer");
+    const planned = await kernel.plan(manifestRel);
+    const manifest = YAML.parse(await fsp.readFile(path.join(root, manifestRel), "utf8")) as { tasks: Array<{ id: string; write_scopes?: string[] }> };
+    expect(manifest.tasks).toHaveLength(1);
+    expect(manifest.tasks[0]).toMatchObject({ id: "gh-42", write_scopes: ["src/left/**"] });
+    expect(planned.issue_sync).toMatchObject({ status: "ok", added: 1, skipped: 1 });
+    expect(planned.assignments[0]).toMatchObject({ task_id: "gh-42", github_issue: 42, assigned_agent_id: "worker" });
+    expect(comments[0]?.body).toContain("orchestrate:assign gh-42");
+    const skipped = YAML.parse(await fsp.readFile(path.join(root, ".autoclaw", "orchestrator", "issues", "skipped.yaml"), "utf8")) as { skipped: Array<{ github_issue: number; reason: string }> };
+    expect(skipped.skipped).toEqual([{ github_issue: 7, title: "No scope", reason: "missing_scope" }]);
+    const execution = await kernel.run(planned.assignments[0]!.assignment_id, worker.session_id, { mode: "mock", mock_changes: { "src/left/result.txt": "ok\n" } });
+    const review = kernel.status().reviews[0] as { review_id: string };
+    const evidence = kernel.store.db.prepare("SELECT evidence_id FROM evidence WHERE execution_id=?").get(execution.execution_id) as { evidence_id: string };
+    const accepted = await kernel.ingestVerdict({
+      schema_version: SCHEMA_VERSION, event_id: crypto.randomUUID(), review_id: review.review_id, execution_id: execution.execution_id,
+      reviewer_agent_id: "reviewer", reviewer_session_id: reviewer.session_id, verdict: "approve", comments: "verified",
+      evidence_refs: [evidence.evidence_id], occurred_at: new Date().toISOString(),
+    });
+    expect(accepted.state).toBe("accepted");
+    expect(comments.some((row) => row.body.includes("orchestrate:done gh-42"))).toBe(true);
+    expect(closed).toEqual([42]);
+    const replay = await kernel.plan(manifestRel);
+    expect(replay.issue_sync).toMatchObject({ added: 0 });
+    expect(comments.filter((row) => row.body.includes("orchestrate:assign"))).toHaveLength(1);
+    kernel.close();
+  });
+
+  it("skips GitHub sync when github-issues.yaml is absent", async () => {
+    let listed = 0;
+    const root = await repository([{ id: "seed", write_scopes: ["src/**"], agent_id: "worker", reviewer_agent_id: "reviewer" }]);
+    const kernel = new ControlPlaneKernel(root, {
+      issuesClient: {
+        listOpenIssues: async () => { listed += 1; return []; },
+        comment: async () => {},
+        close: async () => {},
+      },
+    });
+    await kernel.init();
+    kernel.registerAgent({ agent_id: "worker", display_name: "Worker" });
+    kernel.registerAgent({ agent_id: "reviewer", display_name: "Reviewer" });
+    kernel.createSession("worker");
+    const planned = await kernel.plan("manifest.yaml");
+    expect(listed).toBe(0);
+    expect(planned.issue_sync).toMatchObject({ status: "skipped" });
     kernel.close();
   });
 });

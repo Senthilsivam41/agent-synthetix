@@ -26,6 +26,8 @@ npm run control-plane -- ingest --workspace ..
 npm run control-plane -- status --workspace ..
 ```
 
+`plan` pulls open GitHub Issues create-only when `.autoclaw/orchestrator/github-issues.yaml` exists and `enabled: true`. Missing file skips sync so CI and kernel tests never invoke `gh`. Accepted verdicts comment and close linked issues; issue bodies are never rewritten. Contract: [schemas/github-issues-sync.md](../schemas/github-issues-sync.md).
+
 The default adapter is `mock`, so initialization is safe for CI. To use the live adapter, edit the gitignored `.autoclaw/orchestrator/control-plane.config.json`, set `mode` to `dual-router`, and configure the Python executable, local router path, models, timeout, grace period, and environment-variable allowlist. Secrets are inherited only through that allowlist and never placed in arguments.
 
 Run `npm run smoke:dual-router:live` for the credential-gated live acceptance proof. It uses a temporary clean Git repository, deterministic gates, and an independent reviewer session. If neither supported credential is present, it reports `skipped` without printing secret values.

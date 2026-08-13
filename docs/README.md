@@ -13,7 +13,8 @@ Canonical docs for **agent-synthetix** — a workspace-native, tool-agnostic age
 | [ADR 0004](./adr/0004-hermes-events-evidence-and-acceptance.md) | Proposed event, citation, and acceptance trust boundary |
 | [ADR 0005](./adr/0005-hermes-learning-as-profile-proposals.md) | Proposed controlled handling of Hermes learning output |
 | [Architecture Principles](./architecture-principles.md) | Design principles, subsystem contracts, coordination model, and detailed implementation approach |
-| [Architecture plan (Hermes phases 0–7)](./architecture-plan-phases.md) | Build sequence: ResearchHermes → approve/Pages → Blog → `/learn` → issues → Thread/Report → OpenClaw |
+| [Architecture plan (Hermes phases 0–7)](./architecture-plan-phases.md) | Build sequence: ResearchHermes → approve/Pages → Blog → `/learn` → GitHub Issues sync → Thread/Report → OpenClaw |
+| [GitHub Issues sync](../schemas/github-issues-sync.md) | Phase 5 create-only pull and status-only write-back |
 | [Hermes vs OpenClaw layers](./hermes-vs-openclaw-layers.svg) | Profile (instructions) vs local worker vs hosted runner |
 | [Hermes Pages site](../site/README.md) | Jekyll `site/` — approve → publish → `content` branch → Actions |
 | [Hermes runtime runbook](./runbooks/hermes-runtime.md) | H0 compatibility inspection, isolated candidate preparation, activation, and rollback |

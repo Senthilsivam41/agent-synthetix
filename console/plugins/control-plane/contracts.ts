@@ -56,6 +56,8 @@ export type TaskAssignment = {
   assigned_agent_id: string;
   reviewer_agent_id: string;
   created_at: string;
+  github_issue?: number | null;
+  github_url?: string | null;
 };
 
 export type ExecutionEvent = {
@@ -174,6 +176,9 @@ export type PlanManifest = {
     gates?: GateSpec[];
     agent_id?: string;
     reviewer_agent_id?: string;
+    github_issue?: number;
+    github_url?: string;
+    source?: "github_issue" | "intake" | "hand";
   }>;
 };
 
