@@ -1,14 +1,16 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import YAML from "yaml";
 import {
   SCHEMA_VERSION,
   STATE_TRANSITIONS,
   TERMINAL_STATES,
   type AdapterConfig,
+  type AdapterRegistration,
   type AgentProfile,
   type AgentSession,
+  type CapabilitySnapshot,
   type ExecutionEvent,
   type ExecutionState,
   type ExecutionSummary,
@@ -19,8 +21,21 @@ import {
   type TaskAssignment,
   type VerificationEvidence,
 } from "./contracts";
-import { runAdapter } from "./adapter";
+import { createWorkerAdapter } from "./adapter";
 import { collectGitEvidence, assertCleanWorkspace, commitExecutionChanges, createExecutionWorktree, removeExecutionWorktree, resolveCommit, runGates } from "./git";
+import {
+  appendWritebackLog,
+  assignmentComment,
+  createGhCliClient,
+  doneComment,
+  mergeCreateOnly,
+  parseIssueToTask,
+  readGitHubIssuesConfig,
+  readWritebackLog,
+  skippedIssuesPath,
+  writebackFingerprint,
+  type GitHubIssuesClient,
+} from "./github-issues";
 import { anyScopeOverlap, filesOutsideScopes, listRepositoryFiles, normalizeScope } from "./scope";
 import { parseExecutionEvent, parseReviewVerdict, validateContract } from "./schemas";
 import { ControlPlaneStore } from "./store";
@@ -47,10 +62,12 @@ function asExecution(row: Row): ExecutionSummary {
 export class ControlPlaneKernel {
   readonly workspaceRoot: string;
   readonly store: ControlPlaneStore;
+  private readonly issuesClient?: GitHubIssuesClient;
 
-  constructor(workspaceRoot: string) {
+  constructor(workspaceRoot: string, options: { issuesClient?: GitHubIssuesClient } = {}) {
     this.workspaceRoot = path.resolve(workspaceRoot);
     this.store = new ControlPlaneStore(this.workspaceRoot);
+    this.issuesClient = options.issuesClient;
   }
 
   close() { this.store.close(); }
@@ -66,9 +83,43 @@ export class ControlPlaneKernel {
       };
       await fsp.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
     }
+    this.ensureBuiltInAdapters();
     await this.importLegacy();
     await this.store.exportPendingEvents();
     return this.status();
+  }
+
+  registerAdapter(input: { adapter_id?: string; adapter_type: string; display_name: string; version: string; config_ref?: string | null; health?: AdapterRegistration["health"]; capabilities?: string[]; source?: CapabilitySnapshot["source"]; ttl_seconds?: number }) {
+    const timestamp = now();
+    const capabilities = [...new Set(input.capabilities ?? [])].sort();
+    const registration: AdapterRegistration = validateContract("AdapterRegistration", {
+      schema_version: SCHEMA_VERSION,
+      adapter_id: input.adapter_id ?? input.adapter_type,
+      adapter_type: input.adapter_type,
+      display_name: input.display_name,
+      version: input.version,
+      config_ref: input.config_ref ?? null,
+      health: input.health ?? "healthy",
+      created_at: timestamp,
+      updated_at: timestamp,
+    }, "adapter registration");
+    const snapshot: CapabilitySnapshot = validateContract("CapabilitySnapshot", {
+      schema_version: SCHEMA_VERSION,
+      snapshot_id: randomUUID(),
+      adapter_id: registration.adapter_id,
+      adapter_type: registration.adapter_type,
+      adapter_version: registration.version,
+      capabilities,
+      captured_at: timestamp,
+      expires_at: new Date(Date.parse(timestamp) + (input.ttl_seconds ?? 3600) * 1000).toISOString(),
+      source: input.source ?? "declared",
+      fingerprint: createHash("sha256").update(JSON.stringify(capabilities)).digest("hex"),
+    }, "capability snapshot");
+    this.store.transaction(() => {
+      this.store.upsertAdapterRegistration(registration);
+      this.store.insertCapabilitySnapshot(snapshot);
+    });
+    return { registration, snapshot };
   }
 
   registerAgent(input: { agent_id?: string; display_name: string; adapter_type?: string; capabilities?: string[] }) {
@@ -99,6 +150,7 @@ export class ControlPlaneKernel {
 
   async plan(manifestPath: string) {
     const absolute = path.resolve(this.workspaceRoot, manifestPath);
+    const issueSync = await this.syncGitHubIssues(absolute);
     const manifest = validateContract<PlanManifest>(
       "PlanManifest",
       YAML.parse(await fsp.readFile(absolute, "utf8")),
@@ -136,6 +188,8 @@ export class ControlPlaneKernel {
           gates: (task.gates ?? []).map((gate) => ({ ...gate, required: gate.required !== false })), base_commit: baseCommit,
           assigned_agent_id: task.agent_id ?? "unassigned", reviewer_agent_id: task.reviewer_agent_id ?? "unassigned",
           created_at: now(),
+          github_issue: task.github_issue ?? null,
+          github_url: task.github_url ?? null,
         });
       }
     }
@@ -144,7 +198,8 @@ export class ControlPlaneKernel {
       for (const assignment of assignments) insert.run(assignment.assignment_id, assignment.task_id, assignment.sprint_id, JSON.stringify(assignment), "planned", assignment.created_at);
     });
     await this.writePlanViews(assignments);
-    return { base_commit: baseCommit, assignments, dependency_assignments: Object.fromEntries(taskToAssignment) };
+    await this.writebackAssignments(assignments);
+    return { base_commit: baseCommit, assignments, dependency_assignments: Object.fromEntries(taskToAssignment), issue_sync: issueSync };
   }
 
   async run(assignmentId: string, sessionId: string, adapterOverride?: Partial<AdapterConfig>) {
@@ -152,7 +207,9 @@ export class ControlPlaneKernel {
     if (assignment.assigned_agent_id === "unassigned") throw new Error("assignment must name an agent before execution");
     const session = this.requireActiveSession(sessionId, assignment.assigned_agent_id);
     const worker = this.requireAgent(assignment.assigned_agent_id);
-    const missingCapabilities = assignment.required_capabilities.filter((capability) => !worker.capabilities.includes(capability));
+    const snapshotCapabilities = assignment.required_capabilities.length ? this.currentAdapterCapabilities(worker.adapter_type) : [];
+    const availableCapabilities = new Set([...worker.capabilities, ...snapshotCapabilities]);
+    const missingCapabilities = assignment.required_capabilities.filter((capability) => !availableCapabilities.has(capability));
     if (missingCapabilities.length) throw new Error(`agent ${worker.agent_id} lacks required capabilities: ${missingCapabilities.join(", ")}`);
     this.requireAgent(assignment.reviewer_agent_id);
     if (assignment.reviewer_agent_id === assignment.assigned_agent_id) throw new Error("reviewer must be a different agent");
@@ -186,9 +243,10 @@ export class ControlPlaneKernel {
         { ...(await this.adapterConfig()), ...adapterOverride },
         "adapter configuration",
       );
-      const result = await runAdapter(config, assignment, worktreePath, (pid) => {
+      const adapter = createWorkerAdapter(config);
+      const result = await adapter.run({ config, assignment, worktreePath, onPid: (pid) => {
         this.store.transaction(() => this.store.db.prepare("UPDATE executions SET pid=?,updated_at=? WHERE execution_id=?").run(pid, now(), executionId));
-      });
+      } });
       const artifactRoot = path.join(this.store.root, "artifacts", executionId);
       await fsp.mkdir(artifactRoot, { recursive: true });
       const stdoutPath = path.join(artifactRoot, "adapter.stdout.log");
@@ -287,6 +345,7 @@ export class ControlPlaneKernel {
     await this.store.exportPendingEvents();
     await this.refreshSprintStatuses();
     await this.writeStatusViews();
+    if (target === "accepted") await this.writebackDone(assignment, verdict.execution_id);
     return this.execution(verdict.execution_id);
   }
 
@@ -474,6 +533,24 @@ export class ControlPlaneKernel {
     return parseJson<AgentProfile>(row.profile_json);
   }
 
+  private currentAdapterCapabilities(adapterType: string) {
+    const row = this.store.latestCapabilitySnapshot(adapterType);
+    if (!row?.snapshot_json) throw new Error(`adapter ${adapterType} has no capability snapshot`);
+    const snapshot = validateContract<CapabilitySnapshot>("CapabilitySnapshot", JSON.parse(row.snapshot_json), "capability snapshot");
+    if (Date.parse(snapshot.expires_at) <= Date.now()) throw new Error(`adapter ${adapterType} capability snapshot is stale`);
+    return snapshot.capabilities;
+  }
+
+  private ensureBuiltInAdapters() {
+    const builtIns = [
+      { adapter_id: "mock", adapter_type: "mock", display_name: "Mock worker", version: "builtin", capabilities: ["workspace-write", "deterministic-fixture"] },
+      { adapter_id: "dual-router", adapter_type: "dual-router", display_name: "Dual LLM Router", version: "builtin", capabilities: ["workspace-write", "planner-executor", "dual-router"] },
+    ];
+    for (const adapter of builtIns) {
+      if (!this.store.adapterRegistration(adapter.adapter_type)) this.registerAdapter({ ...adapter, source: "declared" });
+    }
+  }
+
   private requireSession(sessionId: string) {
     const row = this.store.db.prepare("SELECT * FROM sessions WHERE session_id=?").get(sessionId) as Row | undefined;
     if (!row) throw new Error(`unknown session ${sessionId}`);
@@ -632,6 +709,71 @@ export class ControlPlaneKernel {
         };
         statement.run(assignment.assignment_id, taskId, sprintId, JSON.stringify(assignment), "legacy", created);
       }
+    }
+  }
+
+  async syncGitHubIssues(manifestPath: string) {
+    const config = await readGitHubIssuesConfig(this.store.root);
+    if (!config?.enabled) return { status: "skipped" as const, added: 0, skipped: 0, diagnostic: "github-issues sync is disabled or unconfigured" };
+    const client = this.issuesClient ?? createGhCliClient({ owner: config.owner, repo: config.repo, limit: config.limit });
+    let issues;
+    try {
+      issues = await client.listOpenIssues();
+    } catch (error) {
+      return { status: "unavailable" as const, added: 0, skipped: 0, diagnostic: error instanceof Error ? error.message : String(error) };
+    }
+    const incoming = [];
+    const skipped = [];
+    for (const issue of issues) {
+      const parsed = parseIssueToTask(issue);
+      if (parsed.task) incoming.push(parsed.task);
+      if (parsed.skipped) skipped.push(parsed.skipped);
+    }
+    const current = (YAML.parse(await fsp.readFile(manifestPath, "utf8")) ?? { tasks: [] }) as PlanManifest;
+    if (!Array.isArray(current.tasks)) current.tasks = [];
+    const merged = mergeCreateOnly(current, incoming);
+    if (merged.added.length) await fsp.writeFile(manifestPath, YAML.stringify(merged.manifest), "utf8");
+    await fsp.mkdir(path.dirname(skippedIssuesPath(this.store.root)), { recursive: true });
+    await fsp.writeFile(skippedIssuesPath(this.store.root), YAML.stringify({ generated_at: now(), skipped }), "utf8");
+    return { status: "ok" as const, added: merged.added.length, skipped: skipped.length, diagnostic: null as string | null };
+  }
+
+  private async writebackAssignments(assignments: TaskAssignment[]) {
+    for (const assignment of assignments) {
+      if (!assignment.github_issue || assignment.assigned_agent_id === "unassigned") continue;
+      const fingerprint = writebackFingerprint("assign", assignment.github_issue, `${assignment.sprint_id}:${assignment.assigned_agent_id}`);
+      await this.writeback("assign", assignment.github_issue, fingerprint, async (client) => {
+        await client.comment(assignment.github_issue!, assignmentComment({
+          githubIssue: assignment.github_issue!, sprintId: assignment.sprint_id, agentId: assignment.assigned_agent_id, taskId: assignment.task_id,
+        }));
+      });
+    }
+  }
+
+  private async writebackDone(assignment: TaskAssignment, executionId: string) {
+    if (!assignment.github_issue) return;
+    const fingerprint = writebackFingerprint("done", assignment.github_issue, executionId);
+    await this.writeback("done", assignment.github_issue, fingerprint, async (client) => {
+      await client.comment(assignment.github_issue!, doneComment({ githubIssue: assignment.github_issue!, taskId: assignment.task_id, executionId }));
+      await client.close(assignment.github_issue!);
+    });
+  }
+
+  private async writeback(kind: "assign" | "done", githubIssue: number, fingerprint: string, action: (client: GitHubIssuesClient) => Promise<void>) {
+    const log = await readWritebackLog(this.store.root);
+    if (log.some((row) => row.fingerprint === fingerprint && row.status === "ok")) return;
+    const config = await readGitHubIssuesConfig(this.store.root);
+    if (!this.issuesClient && !config?.enabled) return;
+    const client = this.issuesClient ?? createGhCliClient({ owner: config?.owner, repo: config?.repo, limit: config?.limit });
+    if (!client) {
+      await appendWritebackLog(this.store.root, { kind, github_issue: githubIssue, fingerprint, at: now(), status: "failed", diagnostic: "no GitHub issues client" });
+      return;
+    }
+    try {
+      await action(client);
+      await appendWritebackLog(this.store.root, { kind, github_issue: githubIssue, fingerprint, at: now(), status: "ok" });
+    } catch (error) {
+      await appendWritebackLog(this.store.root, { kind, github_issue: githubIssue, fingerprint, at: now(), status: "failed", diagnostic: error instanceof Error ? error.message : String(error) });
     }
   }
 

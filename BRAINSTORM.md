@@ -51,13 +51,14 @@ Decisions made → captured in README.md. These are the **open unknowns** needin
 
 ## 4. Linear / GitHub Issues Sync
 
-**Decision made:** Linear or GitHub Issues as task source, synced to manifest YAML.
+**Decision made:** GitHub Issues is the sole task source. No Linear. No `TaskSource` abstraction.
 
-**Still open:**
-- Linear or GitHub Issues — which is the primary source? Or both?
-- Sync direction: read-only pull into manifest, or bidirectional (agent updates issue status)?
-- How often does it sync? On every `/orchestrate plan`, or continuous via KDream tick?
-- Does the agent write back sprint assignments as issue comments?
+**Accepted (Phase 5 — [schemas/github-issues-sync.md](./schemas/github-issues-sync.md)):**
+- **Pull:** create-only on every `/orchestrate plan` and kernel `plan`. Stable id `gh-<number>`. Match by `id` or `github_issue`; never overwrite name, scopes, or `depends_on`.
+- **Skip:** issues without a parseable write scope (frontmatter `write_scopes`/`scope` or label `scope:<glob>`) go to `.autoclaw/orchestrator/issues/skipped.yaml`.
+- **Push:** status only. Assignment → issue comment (`orchestrate:assign`). Done/accepted → comment (`orchestrate:done`) then **close**. Never rewrite the issue body. Never assignment labels. Never silent close.
+- **Cadence:** planning-time only, not a KDream tick. Missing/`enabled: false` config skips sync. Unavailable `gh` is reported; plan continues.
+- **Opt-in for kernel:** missing `.autoclaw/orchestrator/github-issues.yaml` → kernel does not call `gh`. Compatibility `/orchestrate init` creates the stub with `enabled: true`.
 
 ---
 
@@ -115,6 +116,6 @@ Decisions made → captured in README.md. These are the **open unknowns** needin
 2. ~~Approval gate + publish to GitHub Pages~~ — Phase 2 done
 3. ~~BlogHermes output format~~ — Phase 3 done (`/hermes blog` → pending)
 4. ~~`/learn` multi-tool ingestion (all 5 sources)~~ — Phase 4 done
-5. Linear/GitHub Issues manifest sync
+5. ~~Linear/GitHub Issues manifest sync~~ — Phase 5 done
 6. ~~ThreadHermes + ReportHermes~~ — Phase 6 done
 7. OpenClaw scale-out

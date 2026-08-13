@@ -1,8 +1,8 @@
 # Current status
 
-**Updated:** 2026-08-11
-**Branch:** `codex/hermes-agent-architecture-adrs`
-**Last slice:** Proposed Hermes Agent integration architecture, ADRs, and implementation plan (documentation only)
+**Updated:** 2026-08-13
+**Branch:** `codex/hermes-h0-h1-worker-adapters`
+**Last slice:** Phase 5 GitHub Issues create-only sync and status write-back
 
 ## Product shape
 
@@ -11,7 +11,7 @@
 - Optional UI: Vite console under `console/`
 - Hermes content profiles: `.agent/rules/hermes.md` + `.agent/rules/hermes/<profile>/`
 
-## Hermes (architecture plan Phases 0–4 and 6)
+## Hermes (architecture plan Phases 0–6)
 
 | Piece | Status |
 |---|---|
@@ -21,6 +21,7 @@
 | Jekyll `site/` + Pages Actions (`content`) | Done |
 | BlogHermes (`/hermes blog` → pending from memo diff) | Done |
 | `/learn` multi-tool adapters + normalized provenance | Done (Phase 4) |
+| GitHub Issues → manifest sync | Done (Phase 5) |
 | Thread / Report generators | Done (Phase 6) |
 | Live Pages deploy | Live: https://senthilsivam41.github.io/agent-synthetix/ (run `31512674632`, commit `895d9f6`) |
 | OpenClaw hosted runner | Later (Phase 7) |
@@ -52,6 +53,9 @@ Present in `.agent/rules/orchestrate.md`:
 - North Star: weekly verified agent tasks completed without human repair
 - Proposed adapter expansion: Hermes Agent as a governed worker behind the kernel boundary; see `docs/proposals/hermes-agent-integration-architecture.md` and ADRs 0002–0005
 - Proposal status does not change shipped capabilities: the Hermes Agent adapter, event ingress, A2A edge, and profile promotion are not implemented
+- H0/H1 implementation is present: compatibility inspection, isolated runtime manifest/rollback, common mock/dual-router adapter interface, adapter registration migration, and stale capability enforcement
+- H2 remains gated: Hermes Agent is not enabled as a managed execution adapter; local installation is v0.17 and below the pinned v0.20 target
+- Phase 5 GitHub Issues sync is present: kernel `plan` create-only pull when `github-issues.yaml` is enabled; assignment comments and accepted-verdict comment+close; `gh issue edit` is forbidden
 
 ## Console (`console/`)
 
@@ -78,8 +82,7 @@ cd console && npm install && npm run dev
 1. Execute the live dual-router smoke when a supported model credential is explicitly available
 2. Add browser-level interaction coverage for the guided console workflow
 3. Complete manual VoiceOver/NVDA, zoom, and high-contrast console verification
-4. Hermes Phase 5 GitHub Issues synchronization
-5. `.autoclaw/` is local runtime (gitignored) — do not commit
+4. `.autoclaw/` is local runtime (gitignored) — do not commit
 
 ## Try Hermes Phases 1–4 and 6
 

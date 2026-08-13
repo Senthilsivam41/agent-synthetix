@@ -17,7 +17,7 @@ const validVerdict = {
 
 describe("versioned contracts and lifecycle", () => {
   it("publishes every control-plane schema", () => {
-    expect(Object.keys(CONTRACT_SCHEMAS)).toEqual(expect.arrayContaining(["AgentProfile", "AgentSession", "TaskAssignment", "ExecutionEvent", "ArtifactManifest", "VerificationEvidence", "ReviewRequest", "ReviewVerdict", "ExecutionSummary", "GuardFinding"]));
+    expect(Object.keys(CONTRACT_SCHEMAS)).toEqual(expect.arrayContaining(["AgentProfile", "AgentSession", "TaskAssignment", "ExecutionEvent", "ArtifactManifest", "VerificationEvidence", "ReviewRequest", "ReviewVerdict", "ExecutionSummary", "GuardFinding", "AdapterRegistration", "CapabilitySnapshot"]));
   });
 
   it("rejects unknown schema versions and malformed verdicts", () => {
@@ -51,6 +51,9 @@ describe("versioned contracts and lifecycle", () => {
   it("strictly validates externally supplied plan manifests", () => {
     const manifest = { project: "demo", tasks: [{ id: "task-1", write_scopes: ["src/**"] }] };
     expect(validateContract<PlanManifest>("PlanManifest", manifest, "plan manifest").tasks).toHaveLength(1);
+    expect(validateContract<PlanManifest>("PlanManifest", {
+      tasks: [{ id: "gh-42", github_issue: 42, github_url: "https://github.com/acme/demo/issues/42", source: "github_issue", write_scopes: ["src/**"] }],
+    }, "plan manifest").tasks[0]?.github_issue).toBe(42);
     expect(() => validateContract<PlanManifest>("PlanManifest", { ...manifest, extra: true }, "plan manifest")).toThrow(/unexpected property extra/);
     expect(() => validateContract<PlanManifest>("PlanManifest", { tasks: [{ id: "task-1", write_scopes: "src/**" }] }, "plan manifest")).toThrow(/write_scopes|array/i);
   });

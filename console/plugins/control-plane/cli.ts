@@ -26,7 +26,7 @@ function print(value: unknown) { process.stdout.write(`${JSON.stringify(value, n
 
 async function main() {
   const command = process.argv[2];
-  if (!command) throw new Error("usage: control-plane <init|plan|run|retry|ingest|reconcile|status|cancel|cleanup|register-agent|create-session> [options]");
+  if (!command) throw new Error("usage: control-plane <init|plan|run|retry|ingest|reconcile|status|cancel|cleanup|register-agent|register-adapter|create-session> [options]");
   const workspace = workspaceRoot();
   const lock = new WorkspaceLock(path.join(workspace, ".autoclaw", "orchestrator"));
   lock.acquire(`headless:${command}`);
@@ -52,6 +52,7 @@ async function main() {
           case "retry": result = await kernel.retry(required("execution"), flag("session")); break;
           case "cleanup": result = kernel.cleanup(); break;
           case "register-agent": result = kernel.registerAgent({ agent_id: flag("id"), display_name: required("name"), adapter_type: flag("adapter") ?? "host", capabilities: (flag("capabilities") ?? "").split(",").filter(Boolean) }); break;
+          case "register-adapter": result = kernel.registerAdapter({ adapter_id: flag("id"), adapter_type: required("adapter"), display_name: required("name"), version: required("version"), config_ref: flag("config-ref"), health: (flag("health") as "unknown" | "healthy" | "degraded" | "unavailable" | undefined), capabilities: (flag("capabilities") ?? "").split(",").filter(Boolean), source: (flag("source") as "declared" | "probed" | "compatibility" | undefined), ttl_seconds: Number(flag("ttl") ?? 3600) }); break;
           case "create-session": result = kernel.createSession(required("agent"), Number(flag("ttl") ?? 3600)); break;
           default: throw new Error(`unknown command ${command}`);
         }

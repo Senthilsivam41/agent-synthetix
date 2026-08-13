@@ -45,7 +45,7 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 - [x] Phase 3 — BlogHermes from research diffs → pending
 - [x] First live Pages deploy — Actions run `31512674632`, live at https://senthilsivam41.github.io/agent-synthetix/
 - [x] Phase 4 — `/learn` multi-tool paths
-- [ ] Phase 5 — Linear/GitHub Issues → manifest sync
+- [x] Phase 5 — GitHub Issues → manifest sync (create-only pull; status comment + close)
 - [x] Phase 6 — ThreadHermes + ReportHermes
 - [ ] Phase 7 — OpenClaw hosted runner + Postgres migration for vector/KG
 
@@ -60,8 +60,8 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 
 - [x] Record proposed worker boundary, runtime isolation, evidence trust, and controlled-learning ADRs
 - [x] Write phased implementation plan and issue-sized checklist
-- [ ] H0 — compatibility, pinned runtime, and rollback baseline
-- [ ] H1 — common `WorkerAdapter` and capability snapshots
+- [x] H0 — compatibility, pinned runtime, and rollback baseline (compatibility/manifest implemented; target runtime remains disabled until conformance)
+- [x] H1 — common `WorkerAdapter` and capability snapshots
 - [ ] H2 — local Hermes worktree vertical slice
 - [ ] H3 — authenticated events and grounded citation evidence
 - [ ] H4 — API and console operator surfaces

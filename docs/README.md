@@ -13,9 +13,12 @@ Canonical docs for **agent-synthetix** — a workspace-native, tool-agnostic age
 | [ADR 0004](./adr/0004-hermes-events-evidence-and-acceptance.md) | Proposed event, citation, and acceptance trust boundary |
 | [ADR 0005](./adr/0005-hermes-learning-as-profile-proposals.md) | Proposed controlled handling of Hermes learning output |
 | [Architecture Principles](./architecture-principles.md) | Design principles, subsystem contracts, coordination model, and detailed implementation approach |
-| [Architecture plan (Hermes phases 0–7)](./architecture-plan-phases.md) | Build sequence: ResearchHermes → approve/Pages → Blog → `/learn` → issues → Thread/Report → OpenClaw |
+| [Architecture plan (Hermes phases 0–7)](./architecture-plan-phases.md) | Build sequence: ResearchHermes → approve/Pages → Blog → `/learn` → GitHub Issues sync → Thread/Report → OpenClaw |
+| [GitHub Issues sync](../schemas/github-issues-sync.md) | Phase 5 create-only pull and status-only write-back |
 | [Hermes vs OpenClaw layers](./hermes-vs-openclaw-layers.svg) | Profile (instructions) vs local worker vs hosted runner |
 | [Hermes Pages site](../site/README.md) | Jekyll `site/` — approve → publish → `content` branch → Actions |
+| [Hermes runtime runbook](./runbooks/hermes-runtime.md) | H0 compatibility inspection, isolated candidate preparation, activation, and rollback |
+| [Hermes H0/H1 implementation plan](../tasks/plan-hermes-agent-integration.md) | Adapter contract, registration migration, capability freshness, and later gated phases |
 | [Console accessibility audit](./ux/accessibility-audit-2026-08-11.md) | WCAG 2.2 AA implementation findings, automated evidence, and remaining manual checks |
 | [Product Roadmap](./product-roadmap.md) | Market position, target users, phased delivery plan, gates, metrics, risks, and go-to-market sequence |
 | [`.autoclaw` and KDream](./autoclaw-and-kdream.md) | Check-in policy (do not commit runtime state) and primary purpose of `.autoclaw/` / KDream |

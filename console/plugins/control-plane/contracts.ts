@@ -56,6 +56,8 @@ export type TaskAssignment = {
   assigned_agent_id: string;
   reviewer_agent_id: string;
   created_at: string;
+  github_issue?: number | null;
+  github_url?: string | null;
 };
 
 export type ExecutionEvent = {
@@ -174,6 +176,9 @@ export type PlanManifest = {
     gates?: GateSpec[];
     agent_id?: string;
     reviewer_agent_id?: string;
+    github_issue?: number;
+    github_url?: string;
+    source?: "github_issue" | "intake" | "hand";
   }>;
 };
 
@@ -188,6 +193,31 @@ export type AdapterConfig = {
   env_allowlist: string[];
   /** Deterministic CI fixture writes; ignored by the live dual-router adapter. */
   mock_changes?: Record<string, string>;
+};
+
+export type AdapterRegistration = {
+  schema_version: typeof SCHEMA_VERSION;
+  adapter_id: string;
+  adapter_type: string;
+  display_name: string;
+  version: string;
+  config_ref: string | null;
+  health: "unknown" | "healthy" | "degraded" | "unavailable";
+  created_at: string;
+  updated_at: string;
+};
+
+export type CapabilitySnapshot = {
+  schema_version: typeof SCHEMA_VERSION;
+  snapshot_id: string;
+  adapter_id: string;
+  adapter_type: string;
+  adapter_version: string;
+  capabilities: string[];
+  captured_at: string;
+  expires_at: string;
+  source: "declared" | "probed" | "compatibility";
+  fingerprint: string;
 };
 
 export const TERMINAL_STATES = new Set<ExecutionState>([

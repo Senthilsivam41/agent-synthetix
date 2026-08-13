@@ -3,7 +3,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import type { ExecutionEvent, ExecutionState, GuardFinding } from "./contracts";
+import type { AdapterRegistration, CapabilitySnapshot, ExecutionEvent, ExecutionState, GuardFinding } from "./contracts";
 
 export class WorkspaceLock {
   private fd: number | null = null;
@@ -58,8 +58,8 @@ export class ControlPlaneStore {
   close() { this.db.close(); }
 
   private migrate() {
-    const version = Number(this.db.prepare("PRAGMA user_version").get()?.user_version ?? 0);
-    if (version > 1) throw new Error(`control-plane database version ${version} is newer than supported version 1`);
+    let version = Number(this.db.prepare("PRAGMA user_version").get()?.user_version ?? 0);
+    if (version > 2) throw new Error(`control-plane database version ${version} is newer than supported version 2`);
     if (version === 0) {
       this.db.exec(`
         BEGIN IMMEDIATE;
@@ -80,6 +80,28 @@ export class ControlPlaneStore {
         CREATE INDEX idx_events_execution ON events(execution_id, seq);
         CREATE INDEX idx_leases_active ON scope_leases(released_at, expires_at);
         PRAGMA user_version=1;
+        COMMIT;
+      `);
+      version = 1;
+    }
+    if (version === 1) {
+      this.db.exec(`
+        BEGIN IMMEDIATE;
+        CREATE TABLE adapter_registrations (
+          adapter_id TEXT PRIMARY KEY,
+          adapter_type TEXT UNIQUE NOT NULL,
+          registration_json TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+        CREATE TABLE capability_snapshots (
+          snapshot_id TEXT PRIMARY KEY,
+          adapter_id TEXT NOT NULL REFERENCES adapter_registrations(adapter_id),
+          snapshot_json TEXT NOT NULL,
+          captured_at TEXT NOT NULL,
+          expires_at TEXT NOT NULL
+        );
+        CREATE INDEX idx_capability_snapshots_current ON capability_snapshots(adapter_id, expires_at, captured_at);
+        PRAGMA user_version=2;
         COMMIT;
       `);
     }
@@ -125,6 +147,27 @@ export class ControlPlaneStore {
 
   setSetting(key: string, value: string) {
     this.db.prepare("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(key, value);
+  }
+
+  upsertAdapterRegistration(registration: AdapterRegistration) {
+    this.db.prepare(`INSERT INTO adapter_registrations(adapter_id,adapter_type,registration_json,updated_at)
+      VALUES(?,?,?,?) ON CONFLICT(adapter_id) DO UPDATE SET adapter_type=excluded.adapter_type,registration_json=excluded.registration_json,updated_at=excluded.updated_at`)
+      .run(registration.adapter_id, registration.adapter_type, JSON.stringify(registration), registration.updated_at);
+  }
+
+  adapterRegistration(adapterType: string) {
+    return this.db.prepare("SELECT registration_json FROM adapter_registrations WHERE adapter_type=?").get(adapterType) as { registration_json?: string } | undefined;
+  }
+
+  insertCapabilitySnapshot(snapshot: CapabilitySnapshot) {
+    this.db.prepare(`INSERT OR IGNORE INTO capability_snapshots(snapshot_id,adapter_id,snapshot_json,captured_at,expires_at)
+      VALUES(?,?,?,?,?)`).run(snapshot.snapshot_id, snapshot.adapter_id, JSON.stringify(snapshot), snapshot.captured_at, snapshot.expires_at);
+  }
+
+  latestCapabilitySnapshot(adapterType: string) {
+    return this.db.prepare(`SELECT c.snapshot_json FROM capability_snapshots c
+      JOIN adapter_registrations a ON a.adapter_id=c.adapter_id
+      WHERE a.adapter_type=? ORDER BY c.captured_at DESC LIMIT 1`).get(adapterType) as { snapshot_json?: string } | undefined;
   }
 
   async exportPendingEvents() {

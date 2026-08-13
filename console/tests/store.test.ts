@@ -14,7 +14,7 @@ describe("authoritative store", () => {
     const root = await fsp.mkdtemp(path.join(os.tmpdir(), "synthetix-store-")); roots.push(root);
     const store = new ControlPlaneStore(root);
     expect(store.db.prepare("PRAGMA journal_mode").get()?.journal_mode).toBe("wal");
-    expect(store.db.prepare("PRAGMA user_version").get()?.user_version).toBe(1);
+    expect(store.db.prepare("PRAGMA user_version").get()?.user_version).toBe(2);
     const event = { schema_version: SCHEMA_VERSION, event_id: randomUUID(), event_type: "test", execution_id: "", assignment_id: "", agent_id: "agent", session_id: "session", occurred_at: new Date().toISOString(), payload: { ok: true } };
     expect(store.insertEvent(event)).toBe(true);
     expect(store.insertEvent(event)).toBe(false);
@@ -35,5 +35,17 @@ describe("authoritative store", () => {
     first.acquire("first");
     expect(() => second.acquire("second")).toThrow(/first/);
     first.release();
+  });
+
+  it("persists idempotent adapter registrations and time-bounded capability snapshots", async () => {
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), "synthetix-adapter-store-")); roots.push(root);
+    const store = new ControlPlaneStore(root);
+    const registration = { schema_version: SCHEMA_VERSION, adapter_id: "fixture", adapter_type: "fixture", display_name: "Fixture", version: "1", config_ref: null, health: "healthy" as const, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    const snapshot = { schema_version: SCHEMA_VERSION, snapshot_id: randomUUID(), adapter_id: "fixture", adapter_type: "fixture", adapter_version: "1", capabilities: ["workspace-write"], captured_at: new Date().toISOString(), expires_at: new Date(Date.now() + 60_000).toISOString(), source: "declared" as const, fingerprint: "a".repeat(64) };
+    store.transaction(() => { store.upsertAdapterRegistration(registration); store.insertCapabilitySnapshot(snapshot); store.insertCapabilitySnapshot(snapshot); });
+    expect(JSON.parse(String(store.adapterRegistration("fixture")?.registration_json)).adapter_id).toBe("fixture");
+    expect(JSON.parse(String(store.latestCapabilitySnapshot("fixture")?.snapshot_json)).capabilities).toEqual(["workspace-write"]);
+    expect(store.db.prepare("SELECT COUNT(*) AS count FROM capability_snapshots").get()?.count).toBe(1);
+    store.close();
   });
 });

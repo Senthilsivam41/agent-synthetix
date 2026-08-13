@@ -186,21 +186,23 @@ Every normalized record follows `schemas/learning-insight.md`: redact first, the
 
 ---
 
-## Phase 5 — Linear / GitHub Issues Sync (BRAINSTORM §4)
+## Phase 5 — GitHub Issues Sync (BRAINSTORM §4)
 
 ### Recommended Decision
-**Primary source: GitHub Issues — confirmed as sole source.** No `TaskSource` abstraction needed; build directly against the GitHub Issues API rather than an interface layer for a hypothetical second backend.
+**Primary source: GitHub Issues — confirmed as sole source.** No `TaskSource` abstraction needed; build directly against GitHub Issues (`gh` CLI) rather than an interface layer for a hypothetical second backend.
 
-**Sync direction:** Bidirectional, but asymmetric — pull is authoritative for task *creation* (issue → manifest task), push is limited to *status* (manifest task state change → issue comment + label, not issue body rewrite). Full bidirectional field sync invites conflict resolution complexity you don't need yet.
+**Sync direction:** Bidirectional, but asymmetric — pull is authoritative for task *creation* (issue → manifest task), push is limited to *status* (manifest task state change → issue comment + close, not issue body rewrite). Full bidirectional field sync invites conflict resolution complexity you don't need yet.
 
-**Cadence:** On every `/orchestrate plan`, not continuous via KDream tick — sync is a planning-time concern, and continuous sync risks a race with someone hand-editing the manifest mid-sprint (see Phase 8 below, same class of problem).
+**Cadence:** On every `/orchestrate plan` (and kernel `plan`), not continuous via KDream tick — sync is a planning-time concern, and continuous sync risks a race with someone hand-editing the manifest mid-sprint (see Phase 8 below, same class of problem).
 
-**Write-back:** Yes, sprint assignments as issue comments (not label changes to the issue itself) — comments are append-only and auditable, matches the "transparent... inspectable export" non-functional principle.
+**Write-back:** Yes, sprint assignments as issue comments (not label changes to the issue itself) — comments are append-only and auditable, matches the "transparent... inspectable export" non-functional principle. Done/accepted writes a comment then closes the issue.
 
 ### Action Items
-- [ ] `/orchestrate plan` pulls open GitHub Issues into manifest YAML (create-only)
-- [ ] Sprint assignment → issue comment write-back
-- [ ] Status changes (task done) → issue comment + close, not silent
+- [x] `/orchestrate plan` pulls open GitHub Issues into manifest YAML (create-only)
+- [x] Sprint assignment → issue comment write-back
+- [x] Status changes (task done) → issue comment + close, not silent
+
+**Phase 5 ship note (2026-08-13):** Kernel `plan` merges open issues create-only when `.autoclaw/orchestrator/github-issues.yaml` is `enabled: true`. Missing scope → `issues/skipped.yaml`. Named assignment comments and accepted-verdict comment+close are idempotent via `issues/writeback.jsonl`. Compatibility `/orchestrate` follows the same contract; `gh issue edit` is forbidden. Contract: [schemas/github-issues-sync.md](../schemas/github-issues-sync.md).
 
 ---
 

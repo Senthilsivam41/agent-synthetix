@@ -203,6 +203,18 @@
         },
         "created_at": {
           "type": "string"
+        },
+        "github_issue": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "github_url": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
@@ -725,6 +737,20 @@
               },
               "reviewer_agent_id": {
                 "type": "string"
+              },
+              "github_issue": {
+                "type": "number"
+              },
+              "github_url": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "github_issue",
+                  "intake",
+                  "hand"
+                ]
               }
             },
             "required": [
@@ -788,6 +814,117 @@
         "timeout_ms",
         "termination_grace_ms",
         "env_allowlist"
+      ],
+      "additionalProperties": false
+    },
+    "AdapterRegistration": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "adapter_id": {
+          "type": "string"
+        },
+        "adapter_type": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "config_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "health": {
+          "type": "string",
+          "enum": [
+            "unknown",
+            "healthy",
+            "degraded",
+            "unavailable"
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "adapter_id",
+        "adapter_type",
+        "display_name",
+        "version",
+        "config_ref",
+        "health",
+        "created_at",
+        "updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "CapabilitySnapshot": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "snapshot_id": {
+          "type": "string"
+        },
+        "adapter_id": {
+          "type": "string"
+        },
+        "adapter_type": {
+          "type": "string"
+        },
+        "adapter_version": {
+          "type": "string"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "captured_at": {
+          "type": "string"
+        },
+        "expires_at": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "declared",
+            "probed",
+            "compatibility"
+          ]
+        },
+        "fingerprint": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "snapshot_id",
+        "adapter_id",
+        "adapter_type",
+        "adapter_version",
+        "capabilities",
+        "captured_at",
+        "expires_at",
+        "source",
+        "fingerprint"
       ],
       "additionalProperties": false
     }
