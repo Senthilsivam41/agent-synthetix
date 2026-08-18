@@ -73,5 +73,4 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 After each major implementation slice:
 
 1. Update [STATUS.md](./STATUS.md) and this file
-2. Re-index with Codegraph (`codegraph init` once; then refresh/reindex per tool docs)
-3. Prefer `codegraph_explore` for file/symbol lookup — avoid full-repo Grep/Glob sweeps when index exists
+2. Prefer `codegraph_explore` for file/symbol lookup when `.codegraph/` exists — avoid full-repo Grep/Glob sweeps. The operator updates the Codegraph index manually; agents do not run `codegraph init` / `sync` / `index`.

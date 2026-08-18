@@ -51,4 +51,4 @@ Fixture and kernel conformance are present. The Hermes Agent adapter remains **d
 - [x] `cd console && npm run build`
 - [x] No credentials appear in persisted fixtures or diagnostics
 - [x] Documentation and `memory/` match shipped versus proposed state
-- [ ] `codegraph sync` after each implemented phase
+- Codegraph re-index is operator-manual; not an agent verification step
