@@ -14,10 +14,12 @@
 
 ## H2 — Local Hermes vertical slice
 
-- [ ] H2.1 Translate assignments into immutable completion contracts
-- [ ] H2.2 Implement local stdio JSON-RPC transport
-- [ ] H2.3 Prove accepted and deliberate scope-violation paths
+- [x] H2.1 Translate assignments into immutable completion contracts
+- [x] H2.2 Implement local stdio JSON-RPC transport
+- [x] H2.3 Prove accepted and deliberate scope-violation paths
 - [ ] Checkpoint H2 reviewed before enabling Hermes
+
+Fixture and kernel conformance are present. The Hermes Agent adapter remains **disabled** by default (`hermes_enabled` must be true, registration health is `unavailable`). ADRs 0002 and 0003 stay Proposed until a pinned 0.20 runtime passes live smoke and human review. CI uses the JSON-RPC fixture, not a live Hermes binary.
 
 ## H3 — Events and evidence
 
@@ -44,9 +46,9 @@
 
 ## Standing verification
 
-- [ ] Focused tests pass for each task
-- [ ] `cd console && npm test`
-- [ ] `cd console && npm run build`
-- [ ] No credentials appear in persisted fixtures or diagnostics
-- [ ] Documentation and `memory/` match shipped versus proposed state
+- [x] Focused tests pass for each task
+- [x] `cd console && npm test`
+- [x] `cd console && npm run build`
+- [x] No credentials appear in persisted fixtures or diagnostics
+- [x] Documentation and `memory/` match shipped versus proposed state
 - [ ] `codegraph sync` after each implemented phase

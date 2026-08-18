@@ -16,6 +16,7 @@
     "hermes:compat": "tsx scripts/hermes-compat.ts",
     "hermes:runtime": "tsx scripts/hermes-runtime.ts",
     "smoke:dual-router:live": "tsx scripts/live-dual-router-smoke.ts",
+    "smoke:hermes:live": "tsx scripts/live-hermes-smoke.ts",
     "control-plane": "tsx plugins/control-plane/cli.ts"
   },
   "dependencies": {

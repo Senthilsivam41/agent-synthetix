@@ -183,7 +183,7 @@ export type PlanManifest = {
 };
 
 export type AdapterConfig = {
-  mode: "dual-router" | "mock";
+  mode: "dual-router" | "mock" | "hermes";
   python_executable: string;
   router_path: string;
   planner_model?: string;
@@ -193,6 +193,54 @@ export type AdapterConfig = {
   env_allowlist: string[];
   /** Deterministic CI fixture writes; ignored by the live dual-router adapter. */
   mock_changes?: Record<string, string>;
+  /** Must be true to spawn Hermes; default config leaves this unset so the adapter stays disabled. */
+  hermes_enabled?: boolean;
+  hermes_executable?: string;
+  hermes_args?: string[];
+};
+
+export type HermesCompletionContract = {
+  schema_version: typeof SCHEMA_VERSION;
+  contract_id: string;
+  assignment_id: string;
+  worktree_path: string;
+  outcome: string;
+  verification: {
+    acceptance_criteria: string[];
+    gates: GateSpec[];
+  };
+  constraints: {
+    required_capabilities: string[];
+    ambiguous_scopes: string[];
+  };
+  boundaries: {
+    read_scopes: string[];
+    write_scopes: string[];
+  };
+  stop_when: string[];
+  correlation: {
+    task_id: string;
+    base_commit: string;
+    assigned_agent_id: string;
+  };
+  assignment_fingerprint: string;
+};
+
+export type ExternalRunRecord = {
+  schema_version: typeof SCHEMA_VERSION;
+  external_run_id: string;
+  execution_id: string;
+  assignment_id: string;
+  adapter_type: "hermes";
+  external_session_id: string | null;
+  pid: number | null;
+  version: string | null;
+  worktree_path: string;
+  contract: HermesCompletionContract;
+  assignment_fingerprint: string;
+  started_at: string;
+  completed_at: string | null;
+  termination_reason: string | null;
 };
 
 export type AdapterRegistration = {

@@ -1,8 +1,8 @@
 # Current status
 
-**Updated:** 2026-08-13
+**Updated:** 2026-08-18
 **Branch:** `codex/hermes-h0-h1-worker-adapters`
-**Last slice:** Phase 5 GitHub Issues create-only sync and status write-back
+**Last slice:** H2 Hermes Agent local worktree fixture slice (adapter still disabled)
 
 ## Product shape
 
@@ -54,7 +54,7 @@ Present in `.agent/rules/orchestrate.md`:
 - Proposed adapter expansion: Hermes Agent as a governed worker behind the kernel boundary; see `docs/proposals/hermes-agent-integration-architecture.md` and ADRs 0002–0005
 - Proposal status does not change shipped capabilities: the Hermes Agent adapter, event ingress, A2A edge, and profile promotion are not implemented
 - H0/H1 implementation is present: compatibility inspection, isolated runtime manifest/rollback, common mock/dual-router adapter interface, adapter registration migration, and stale capability enforcement
-- H2 remains gated: Hermes Agent is not enabled as a managed execution adapter; local installation is v0.17 and below the pinned v0.20 target
+- H2 fixture/conformance is present: immutable completion contracts, local stdio JSON-RPC fixture adapter, kernel accepted + scope-violation paths, and credential/runtime-gated live smoke. Hermes Agent is **not enabled** as a managed execution adapter; local installation is v0.17 and below the pinned v0.20 target. ADRs 0002/0003 remain Proposed.
 - Phase 5 GitHub Issues sync is present: kernel `plan` create-only pull when `github-issues.yaml` is enabled; assignment comments and accepted-verdict comment+close; `gh issue edit` is forbidden
 
 ## Console (`console/`)

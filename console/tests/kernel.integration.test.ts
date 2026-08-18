@@ -2,8 +2,9 @@ import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SCHEMA_VERSION } from "../plugins/control-plane/contracts";
+import { hermesFixtureConfig } from "../plugins/control-plane/hermes-adapter";
 import { ControlPlaneKernel } from "../plugins/control-plane/kernel";
 import type { GitHubIssue } from "../plugins/control-plane/github-issues";
 import YAML from "yaml";
@@ -23,7 +24,11 @@ async function repository(tasks: unknown[]) {
   return root;
 }
 
-afterEach(async () => { for (const root of roots.splice(0)) await fsp.rm(root, { recursive: true, force: true }); });
+afterEach(async () => {
+  delete process.env.HERMES_FIXTURE_MODE;
+  delete process.env.HERMES_FIXTURE_WRITES;
+  for (const root of roots.splice(0)) await fsp.rm(root, { recursive: true, force: true });
+});
 
 describe("control-plane vertical slice", () => {
   it("runs disjoint assignments without overlapping leases", async () => {
@@ -108,6 +113,101 @@ describe("control-plane vertical slice", () => {
     const worker = kernel.createSession("worker");
     const planned = await kernel.plan("manifest.yaml");
     await expect(kernel.run(planned.assignments[0]!.assignment_id, worker.session_id, { mode: "mock" })).rejects.toThrow(/capability snapshot is stale/);
+    kernel.close();
+  });
+});
+
+describe("Hermes Agent kernel vertical slice", () => {
+  function fixtureOverride(mode: string, writes: Record<string, string> = {}, timeoutMs = 5_000) {
+    process.env.HERMES_FIXTURE_MODE = mode;
+    process.env.HERMES_FIXTURE_WRITES = JSON.stringify(writes);
+    return hermesFixtureConfig({ timeout_ms: timeoutMs, termination_grace_ms: 50 });
+  }
+
+  it("accepts in-scope fixture work only after independent review and preserves external-run correlation", async () => {
+    const root = await repository([{ id: "task-a", title: "Change source", write_scopes: ["src/**"], agent_id: "worker", reviewer_agent_id: "reviewer", gates: [{ name: "exists", command: "test -f src/result.txt", required: true }] }]);
+    const kernel = new ControlPlaneKernel(root); await kernel.init();
+    kernel.registerAgent({ agent_id: "worker", display_name: "Worker" }); kernel.registerAgent({ agent_id: "reviewer", display_name: "Reviewer" });
+    const worker = kernel.createSession("worker"); const reviewer = kernel.createSession("reviewer");
+    const planned = await kernel.plan("manifest.yaml");
+    const execution = await kernel.run(planned.assignments[0]!.assignment_id, worker.session_id, fixtureOverride("success", { "src/result.txt": "done\n" }));
+    expect(execution.state).toBe("awaiting_review");
+    const contractPath = path.join(root, ".autoclaw", "orchestrator", "artifacts", execution.execution_id, "hermes-completion-contract.json");
+    expect(JSON.parse(await fsp.readFile(contractPath, "utf8")).assignment_id).toBe(planned.assignments[0]!.assignment_id);
+    const external = JSON.parse(String(kernel.store.externalRunForExecution(execution.execution_id)?.record_json));
+    expect(external.external_run_id).toBe("ext-run-fixture");
+    expect(external.external_session_id).toBe("ext-session-fixture");
+    const review = kernel.status().reviews[0] as { review_id: string };
+    const evidence = kernel.store.db.prepare("SELECT evidence_id FROM evidence WHERE execution_id=?").get(execution.execution_id) as { evidence_id: string };
+    await expect(kernel.ingestVerdict({ schema_version: SCHEMA_VERSION, event_id: crypto.randomUUID(), review_id: review.review_id, execution_id: execution.execution_id, reviewer_agent_id: "worker", reviewer_session_id: worker.session_id, verdict: "approve", comments: "self", evidence_refs: [evidence.evidence_id], occurred_at: new Date().toISOString() })).rejects.toThrow();
+    const accepted = await kernel.ingestVerdict({ schema_version: SCHEMA_VERSION, event_id: crypto.randomUUID(), review_id: review.review_id, execution_id: execution.execution_id, reviewer_agent_id: "reviewer", reviewer_session_id: reviewer.session_id, verdict: "approve", comments: "verified", evidence_refs: [evidence.evidence_id], occurred_at: new Date().toISOString() });
+    expect(accepted.state).toBe("accepted");
+    await kernel.reconcile();
+    expect(JSON.parse(String(kernel.store.externalRunForExecution(execution.execution_id)?.record_json)).external_run_id).toBe("ext-run-fixture");
+    expect(kernel.replayExecution(execution.execution_id)).toBe("accepted");
+    kernel.close();
+  });
+
+  it("fails out-of-scope fixture writes even when the worker reports completed", async () => {
+    const root = await repository([{ id: "task-a", write_scopes: ["src/**"], agent_id: "worker", reviewer_agent_id: "reviewer" }]);
+    const kernel = new ControlPlaneKernel(root); await kernel.init();
+    kernel.registerAgent({ agent_id: "worker", display_name: "Worker" }); kernel.registerAgent({ agent_id: "reviewer", display_name: "Reviewer" });
+    const worker = kernel.createSession("worker");
+    const planned = await kernel.plan("manifest.yaml");
+    const violation = await kernel.run(planned.assignments[0]!.assignment_id, worker.session_id, fixtureOverride("success", { "docs/oops.md": "outside\n" }));
+    expect(violation.state).toBe("failed");
+    expect(violation.failure_code).toBe("scope_violation");
+    kernel.close();
+  });
+
+  it("preserves partial evidence after a fixture crash", async () => {
+    const root = await repository([{ id: "task-a", write_scopes: ["src/**"], agent_id: "worker", reviewer_agent_id: "reviewer" }]);
+    const kernel = new ControlPlaneKernel(root); await kernel.init();
+    kernel.registerAgent({ agent_id: "worker", display_name: "Worker" }); kernel.registerAgent({ agent_id: "reviewer", display_name: "Reviewer" });
+    const worker = kernel.createSession("worker");
+    const planned = await kernel.plan("manifest.yaml");
+    const crashed = await kernel.run(planned.assignments[0]!.assignment_id, worker.session_id, fixtureOverride("crash"));
+    expect(crashed.state).toBe("failed");
+    expect(crashed.failure_code).toBe("process_failure");
+    const evidence = kernel.store.db.prepare("SELECT evidence_json FROM evidence WHERE execution_id=?").get(crashed.execution_id) as { evidence_json: string };
+    expect(JSON.parse(evidence.evidence_json).router_report.termination_reason).toBe("process_failure");
+    expect(kernel.store.externalRunForExecution(crashed.execution_id)?.record_json).toBeTruthy();
+    kernel.close();
+  });
+
+  it("preserves partial evidence when an in-flight Hermes run is cancelled", async () => {
+    const root = await repository([{ id: "task-a", write_scopes: ["src/**"], agent_id: "worker", reviewer_agent_id: "reviewer" }]);
+    const kernel = new ControlPlaneKernel(root); await kernel.init();
+    kernel.registerAgent({ agent_id: "worker", display_name: "Worker" }); kernel.registerAgent({ agent_id: "reviewer", display_name: "Reviewer" });
+    const worker = kernel.createSession("worker");
+    const planned = await kernel.plan("manifest.yaml");
+    const pending = kernel.run(planned.assignments[0]!.assignment_id, worker.session_id, fixtureOverride("timeout", { "src/partial.txt": "partial\n" }, 8_000));
+    await vi.waitFor(async () => {
+      const execution = kernel.status().executions[0];
+      expect(execution?.worktree_path).toBeTruthy();
+      await fsp.access(path.join(execution!.worktree_path!, "src/partial.txt"));
+    }, { timeout: 4_000 });
+    const executionId = kernel.status().executions[0]!.execution_id;
+    kernel.cancel(executionId);
+    const cancelled = await pending;
+    expect(cancelled.state).toBe("cancelled");
+    const evidence = kernel.store.db.prepare("SELECT evidence_json FROM evidence WHERE execution_id=?").get(executionId) as { evidence_json: string };
+    expect(JSON.parse(evidence.evidence_json).changed_files).toEqual(expect.arrayContaining(["src/partial.txt"]));
+    kernel.close();
+  });
+
+  it("keeps Hermes disabled in default config and without hermes_enabled", async () => {
+    const root = await repository([{ id: "task-a", write_scopes: ["src/**"], agent_id: "worker", reviewer_agent_id: "reviewer" }]);
+    const kernel = new ControlPlaneKernel(root); await kernel.init();
+    const config = JSON.parse(await fsp.readFile(path.join(root, ".autoclaw", "orchestrator", "control-plane.config.json"), "utf8")) as { mode: string; hermes_enabled?: boolean };
+    expect(config.mode).toBe("mock");
+    expect(config.hermes_enabled).toBeUndefined();
+    const registration = JSON.parse(String(kernel.store.adapterRegistration("hermes")?.registration_json));
+    expect(registration.health).toBe("unavailable");
+    kernel.registerAgent({ agent_id: "worker", display_name: "Worker" }); kernel.registerAgent({ agent_id: "reviewer", display_name: "Reviewer" });
+    const worker = kernel.createSession("worker");
+    const planned = await kernel.plan("manifest.yaml");
+    await expect(kernel.run(planned.assignments[0]!.assignment_id, worker.session_id, { mode: "hermes" })).rejects.toThrow(/disabled/);
     kernel.close();
   });
 });

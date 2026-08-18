@@ -14,7 +14,7 @@ describe("authoritative store", () => {
     const root = await fsp.mkdtemp(path.join(os.tmpdir(), "synthetix-store-")); roots.push(root);
     const store = new ControlPlaneStore(root);
     expect(store.db.prepare("PRAGMA journal_mode").get()?.journal_mode).toBe("wal");
-    expect(store.db.prepare("PRAGMA user_version").get()?.user_version).toBe(2);
+    expect(store.db.prepare("PRAGMA user_version").get()?.user_version).toBe(3);
     const event = { schema_version: SCHEMA_VERSION, event_id: randomUUID(), event_type: "test", execution_id: "", assignment_id: "", agent_id: "agent", session_id: "session", occurred_at: new Date().toISOString(), payload: { ok: true } };
     expect(store.insertEvent(event)).toBe(true);
     expect(store.insertEvent(event)).toBe(false);
@@ -46,6 +46,44 @@ describe("authoritative store", () => {
     expect(JSON.parse(String(store.adapterRegistration("fixture")?.registration_json)).adapter_id).toBe("fixture");
     expect(JSON.parse(String(store.latestCapabilitySnapshot("fixture")?.snapshot_json)).capabilities).toEqual(["workspace-write"]);
     expect(store.db.prepare("SELECT COUNT(*) AS count FROM capability_snapshots").get()?.count).toBe(1);
+    store.close();
+  });
+
+  it("persists Hermes external-run correlation for restart/reconcile", async () => {
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), "synthetix-external-run-")); roots.push(root);
+    const store = new ControlPlaneStore(root);
+    const record = {
+      schema_version: SCHEMA_VERSION,
+      external_run_id: "ext-run-1",
+      execution_id: "exec-1",
+      assignment_id: "assign-1",
+      adapter_type: "hermes" as const,
+      external_session_id: "sess-1",
+      pid: 42,
+      version: "0.20.0",
+      worktree_path: "/tmp/worktree",
+      contract: {
+        schema_version: SCHEMA_VERSION,
+        contract_id: "c1",
+        assignment_id: "assign-1",
+        worktree_path: "/tmp/worktree",
+        outcome: "goal",
+        verification: { acceptance_criteria: [], gates: [] },
+        constraints: { required_capabilities: [], ambiguous_scopes: [] },
+        boundaries: { read_scopes: ["src/**"], write_scopes: ["src/**"] },
+        stop_when: ["leave write scopes"],
+        correlation: { task_id: "t", base_commit: "base", assigned_agent_id: "worker" },
+        assignment_fingerprint: "f".repeat(64),
+      },
+      assignment_fingerprint: "f".repeat(64),
+      started_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+      termination_reason: "completed",
+    };
+    store.upsertExternalRun(record);
+    store.upsertExternalRun({ ...record, completed_at: "2026-08-18T00:00:00.000Z" });
+    expect(JSON.parse(String(store.externalRunForExecution("exec-1")?.record_json)).external_run_id).toBe("ext-run-1");
+    expect(JSON.parse(String(store.externalRunForExecution("exec-1")?.record_json)).completed_at).toBe("2026-08-18T00:00:00.000Z");
     store.close();
   });
 });

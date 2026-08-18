@@ -16,7 +16,9 @@ type ContractName =
   | "PlanManifest"
   | "AdapterConfig"
   | "AdapterRegistration"
-  | "CapabilitySnapshot";
+  | "CapabilitySnapshot"
+  | "HermesCompletionContract"
+  | "ExternalRunRecord";
 
 type SchemaBundle = {
   $id: string;

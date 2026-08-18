@@ -3,7 +3,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import type { AdapterRegistration, CapabilitySnapshot, ExecutionEvent, ExecutionState, GuardFinding } from "./contracts";
+import type { AdapterRegistration, CapabilitySnapshot, ExecutionEvent, ExecutionState, ExternalRunRecord, GuardFinding } from "./contracts";
 
 export class WorkspaceLock {
   private fd: number | null = null;
@@ -59,7 +59,7 @@ export class ControlPlaneStore {
 
   private migrate() {
     let version = Number(this.db.prepare("PRAGMA user_version").get()?.user_version ?? 0);
-    if (version > 2) throw new Error(`control-plane database version ${version} is newer than supported version 2`);
+    if (version > 3) throw new Error(`control-plane database version ${version} is newer than supported version 3`);
     if (version === 0) {
       this.db.exec(`
         BEGIN IMMEDIATE;
@@ -104,6 +104,26 @@ export class ControlPlaneStore {
         PRAGMA user_version=2;
         COMMIT;
       `);
+      version = 2;
+    }
+    if (version === 2) {
+      this.db.exec(`
+        BEGIN IMMEDIATE;
+        CREATE TABLE external_runs (
+          external_run_id TEXT PRIMARY KEY,
+          execution_id TEXT NOT NULL,
+          assignment_id TEXT NOT NULL,
+          adapter_type TEXT NOT NULL,
+          record_json TEXT NOT NULL,
+          assignment_fingerprint TEXT NOT NULL,
+          started_at TEXT NOT NULL,
+          completed_at TEXT
+        );
+        CREATE INDEX idx_external_runs_execution ON external_runs(execution_id, started_at);
+        PRAGMA user_version=3;
+        COMMIT;
+      `);
+      version = 3;
     }
   }
 
@@ -168,6 +188,17 @@ export class ControlPlaneStore {
     return this.db.prepare(`SELECT c.snapshot_json FROM capability_snapshots c
       JOIN adapter_registrations a ON a.adapter_id=c.adapter_id
       WHERE a.adapter_type=? ORDER BY c.captured_at DESC LIMIT 1`).get(adapterType) as { snapshot_json?: string } | undefined;
+  }
+
+  upsertExternalRun(record: ExternalRunRecord) {
+    this.db.prepare(`INSERT INTO external_runs(external_run_id,execution_id,assignment_id,adapter_type,record_json,assignment_fingerprint,started_at,completed_at)
+      VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(external_run_id) DO UPDATE SET
+        record_json=excluded.record_json, completed_at=excluded.completed_at`)
+      .run(record.external_run_id, record.execution_id, record.assignment_id, record.adapter_type, JSON.stringify(record), record.assignment_fingerprint, record.started_at, record.completed_at);
+  }
+
+  externalRunForExecution(executionId: string) {
+    return this.db.prepare("SELECT record_json FROM external_runs WHERE execution_id=? ORDER BY started_at DESC LIMIT 1").get(executionId) as { record_json?: string } | undefined;
   }
 
   async exportPendingEvents() {
