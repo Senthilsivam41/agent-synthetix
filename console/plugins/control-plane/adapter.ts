@@ -4,6 +4,7 @@ import fsp from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import type { AdapterConfig, TaskAssignment } from "./contracts";
+import { HermesAgentAdapter } from "./hermes-adapter";
 
 export type AdapterResult = {
   status: "completed" | "planning_failed" | "execution_failed" | "failed";
@@ -21,6 +22,7 @@ export type WorkerRunRequest = {
   config: AdapterConfig;
   assignment: TaskAssignment;
   worktreePath: string;
+  executionId?: string;
   onPid?: (pid: number) => void;
 };
 
@@ -176,5 +178,6 @@ class ConfiguredWorkerAdapter implements WorkerAdapter {
 }
 
 export function createWorkerAdapter(config: AdapterConfig): WorkerAdapter {
+  if (config.mode === "hermes") return new HermesAgentAdapter(config);
   return new ConfiguredWorkerAdapter(config);
 }

@@ -15,6 +15,7 @@ import {
   type ExecutionState,
   type ExecutionSummary,
   type GuardFinding,
+  type HermesCompletionContract,
   type PlanManifest,
   type ReviewRequest,
   type ReviewVerdict,
@@ -244,7 +245,7 @@ export class ControlPlaneKernel {
         "adapter configuration",
       );
       const adapter = createWorkerAdapter(config);
-      const result = await adapter.run({ config, assignment, worktreePath, onPid: (pid) => {
+      const result = await adapter.run({ config, assignment, worktreePath, executionId, onPid: (pid) => {
         this.store.transaction(() => this.store.db.prepare("UPDATE executions SET pid=?,updated_at=? WHERE execution_id=?").run(pid, now(), executionId));
       } });
       const artifactRoot = path.join(this.store.root, "artifacts", executionId);
@@ -253,8 +254,29 @@ export class ControlPlaneKernel {
       const stderrPath = path.join(artifactRoot, "adapter.stderr.log");
       await Promise.all([fsp.writeFile(stdoutPath, result.stdout, "utf8"), fsp.writeFile(stderrPath, result.stderr, "utf8")]);
       await fsp.writeFile(path.join(artifactRoot, "adapter-result.json"), `${JSON.stringify({ status: result.status, exit_code: result.exitCode, pid: result.pid, duration_ms: result.durationMs, termination_reason: result.terminationReason, failure_code: result.failureCode, reported_result: result.result }, null, 2)}\n`, "utf8");
-      if (this.execution(executionId).state === "cancelled") return this.execution(executionId);
-      if (result.status !== "completed") {
+      const reportedContract = result.result && typeof result.result === "object" ? (result.result as { completion_contract?: HermesCompletionContract; hermes_correlation?: Record<string, unknown> }) : null;
+      if (reportedContract?.completion_contract) {
+        await fsp.writeFile(path.join(artifactRoot, "hermes-completion-contract.json"), `${JSON.stringify(reportedContract.completion_contract, null, 2)}\n`, "utf8");
+        const correlation = reportedContract.hermes_correlation ?? {};
+        this.store.upsertExternalRun({
+          schema_version: SCHEMA_VERSION,
+          external_run_id: String(correlation.external_run_id ?? randomUUID()),
+          execution_id: executionId,
+          assignment_id: assignment.assignment_id,
+          adapter_type: "hermes",
+          external_session_id: correlation.external_session_id ? String(correlation.external_session_id) : null,
+          pid: result.pid,
+          version: correlation.version ? String(correlation.version) : null,
+          worktree_path: worktreePath,
+          contract: reportedContract.completion_contract,
+          assignment_fingerprint: reportedContract.completion_contract.assignment_fingerprint,
+          started_at: timestamp,
+          completed_at: now(),
+          termination_reason: result.terminationReason,
+        });
+      }
+      const cancelled = this.execution(executionId).state === "cancelled";
+      if (cancelled || result.status !== "completed") {
         const gitEvidence = await collectGitEvidence(worktreePath, assignment.base_commit, artifactRoot);
         const outOfScope = filesOutsideScopes(gitEvidence.changedFiles, assignment.write_scopes);
         const evidence: VerificationEvidence = {
@@ -266,8 +288,9 @@ export class ControlPlaneKernel {
         await fsp.writeFile(path.join(artifactRoot, "artifact-manifest.json"), `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
         this.store.transaction(() => {
           this.store.db.prepare("INSERT INTO evidence(evidence_id,execution_id,evidence_json,created_at) VALUES(?,?,?,?)").run(evidence.evidence_id, executionId, JSON.stringify(evidence), evidence.created_at);
-          this.appendEvent(executionId, assignment, session, "partial_execution_evidence", { evidence_id: evidence.evidence_id, termination_reason: result.terminationReason });
+          this.appendEvent(executionId, assignment, session, "partial_execution_evidence", { evidence_id: evidence.evidence_id, termination_reason: result.terminationReason, cancelled });
         });
+        if (cancelled) return this.execution(executionId);
         if (outOfScope.length) this.finding(executionId, "high", "scope_violation", `partial adapter execution changed out-of-scope files: ${outOfScope.join(", ")}`);
         else this.finding(executionId, "high", "adapter_failure", `adapter failed: ${result.failureCode ?? result.status}`);
         this.changeState(executionId, assignment, session, "failed", outOfScope.length ? "scope_violation" : result.failureCode ?? result.status);
@@ -545,6 +568,7 @@ export class ControlPlaneKernel {
     const builtIns = [
       { adapter_id: "mock", adapter_type: "mock", display_name: "Mock worker", version: "builtin", capabilities: ["workspace-write", "deterministic-fixture"] },
       { adapter_id: "dual-router", adapter_type: "dual-router", display_name: "Dual LLM Router", version: "builtin", capabilities: ["workspace-write", "planner-executor", "dual-router"] },
+      { adapter_id: "hermes", adapter_type: "hermes", display_name: "Hermes Agent", version: "disabled", capabilities: ["workspace-write", "json-rpc", "hermes-agent"], health: "unavailable" as const },
     ];
     for (const adapter of builtIns) {
       if (!this.store.adapterRegistration(adapter.adapter_type)) this.registerAdapter({ ...adapter, source: "declared" });

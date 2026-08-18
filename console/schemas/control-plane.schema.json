@@ -772,7 +772,8 @@
           "type": "string",
           "enum": [
             "dual-router",
-            "mock"
+            "mock",
+            "hermes"
           ]
         },
         "python_executable": {
@@ -805,6 +806,19 @@
             "type": "string"
           },
           "description": "Deterministic CI fixture writes; ignored by the live dual-router adapter."
+        },
+        "hermes_enabled": {
+          "type": "boolean",
+          "description": "Must be true to spawn Hermes; default config leaves this unset so the adapter stays disabled."
+        },
+        "hermes_executable": {
+          "type": "string"
+        },
+        "hermes_args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
@@ -814,6 +828,217 @@
         "timeout_ms",
         "termination_grace_ms",
         "env_allowlist"
+      ],
+      "additionalProperties": false
+    },
+    "HermesCompletionContract": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "contract_id": {
+          "type": "string"
+        },
+        "assignment_id": {
+          "type": "string"
+        },
+        "worktree_path": {
+          "type": "string"
+        },
+        "outcome": {
+          "type": "string"
+        },
+        "verification": {
+          "type": "object",
+          "properties": {
+            "acceptance_criteria": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "gates": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/GateSpec"
+              }
+            }
+          },
+          "required": [
+            "acceptance_criteria",
+            "gates"
+          ],
+          "additionalProperties": false
+        },
+        "constraints": {
+          "type": "object",
+          "properties": {
+            "required_capabilities": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ambiguous_scopes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "required_capabilities",
+            "ambiguous_scopes"
+          ],
+          "additionalProperties": false
+        },
+        "boundaries": {
+          "type": "object",
+          "properties": {
+            "read_scopes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "write_scopes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "read_scopes",
+            "write_scopes"
+          ],
+          "additionalProperties": false
+        },
+        "stop_when": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "correlation": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "type": "string"
+            },
+            "base_commit": {
+              "type": "string"
+            },
+            "assigned_agent_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "task_id",
+            "base_commit",
+            "assigned_agent_id"
+          ],
+          "additionalProperties": false
+        },
+        "assignment_fingerprint": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "contract_id",
+        "assignment_id",
+        "worktree_path",
+        "outcome",
+        "verification",
+        "constraints",
+        "boundaries",
+        "stop_when",
+        "correlation",
+        "assignment_fingerprint"
+      ],
+      "additionalProperties": false
+    },
+    "ExternalRunRecord": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "external_run_id": {
+          "type": "string"
+        },
+        "execution_id": {
+          "type": "string"
+        },
+        "assignment_id": {
+          "type": "string"
+        },
+        "adapter_type": {
+          "type": "string",
+          "const": "hermes"
+        },
+        "external_session_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pid": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "worktree_path": {
+          "type": "string"
+        },
+        "contract": {
+          "$ref": "#/definitions/HermesCompletionContract"
+        },
+        "assignment_fingerprint": {
+          "type": "string"
+        },
+        "started_at": {
+          "type": "string"
+        },
+        "completed_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "termination_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "external_run_id",
+        "execution_id",
+        "assignment_id",
+        "adapter_type",
+        "external_session_id",
+        "pid",
+        "version",
+        "worktree_path",
+        "contract",
+        "assignment_fingerprint",
+        "started_at",
+        "completed_at",
+        "termination_reason"
       ],
       "additionalProperties": false
     },

@@ -17,8 +17,8 @@ Canonical docs for **agent-synthetix** — a workspace-native, tool-agnostic age
 | [GitHub Issues sync](../schemas/github-issues-sync.md) | Phase 5 create-only pull and status-only write-back |
 | [Hermes vs OpenClaw layers](./hermes-vs-openclaw-layers.svg) | Profile (instructions) vs local worker vs hosted runner |
 | [Hermes Pages site](../site/README.md) | Jekyll `site/` — approve → publish → `content` branch → Actions |
-| [Hermes runtime runbook](./runbooks/hermes-runtime.md) | H0 compatibility inspection, isolated candidate preparation, activation, and rollback |
-| [Hermes H0/H1 implementation plan](../tasks/plan-hermes-agent-integration.md) | Adapter contract, registration migration, capability freshness, and later gated phases |
+| [Hermes runtime runbook](./runbooks/hermes-runtime.md) | H0 compatibility, isolated runtime lifecycle, H2 worktree JSON-RPC slice (adapter still disabled) |
+| [Hermes Agent implementation plan](../tasks/plan-hermes-agent-integration.md) | H0–H6 adapter plan; H2 fixture/conformance is present, enablement is not |
 | [Console accessibility audit](./ux/accessibility-audit-2026-08-11.md) | WCAG 2.2 AA implementation findings, automated evidence, and remaining manual checks |
 | [Product Roadmap](./product-roadmap.md) | Market position, target users, phased delivery plan, gates, metrics, risks, and go-to-market sequence |
 | [`.autoclaw` and KDream](./autoclaw-and-kdream.md) | Check-in policy (do not commit runtime state) and primary purpose of `.autoclaw/` / KDream |

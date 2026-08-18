@@ -43,6 +43,20 @@ Rollback swaps the active and previous executable references atomically in the m
 ## Safety rules
 
 - Pin a reviewed release; never use an unqualified `latest` executable for a managed run.
-- Keep Hermes state isolated with a dedicated profile home. The profile is separate from the Git worktree; the adapter must set the worktree explicitly when H2 is implemented.
+- Keep Hermes state isolated with a dedicated profile home. The profile is separate from the Git worktree. The H2 adapter sets `cwd` to the kernel-created execution worktree and records that path on the completion contract.
 - Do not place API keys in command arguments or the runtime manifest.
-- Do not enable the Hermes adapter until H1 registration and H2 worktree conformance pass.
+- Do not enable the Hermes adapter until a pinned 0.20.0 runtime passes live worktree conformance and human review. Fixture tests are not enablement.
+
+## H2 local worktree slice
+
+H2 translates a kernel `TaskAssignment` into an immutable completion contract (outcome, verification, constraints, boundaries, `stop_when`) and talks to the worker over stdio JSON-RPC from that worktree. PID, version, external run/session IDs, timing, and termination reason are stored on `external_runs` (database migration 3) and as `artifacts/<execution-id>/hermes-completion-contract.json`.
+
+The adapter still refuses to start unless `control-plane.config.json` has `mode: "hermes"` **and** `hermes_enabled: true`. Built-in registration health is `unavailable`. CI uses `console/plugins/control-plane/fixtures/hermes-jsonrpc-fixture.mjs` via Node, not a live Hermes binary.
+
+```bash
+cd console
+npm test
+HERMES_LIVE_SMOKE=1 npm run smoke:hermes:live
+```
+
+The live smoke command no-ops unless `HERMES_LIVE_SMOKE=1` and `inspectHermesRuntime` reports the pinned `0.20.0` / `v2026.8.3` release. It does not change default adapter configuration.

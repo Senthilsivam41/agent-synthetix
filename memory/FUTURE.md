@@ -1,6 +1,6 @@
 # Future changes
 
-**Updated:** 2026-08-11
+**Updated:** 2026-08-18
 Prioritized backlog for Orchestrate console + soft-gate productization. Control-plane sequence: [Product Roadmap](../docs/product-roadmap.md). Hermes content sequence: [Architecture plan phases](../docs/architecture-plan-phases.md).
 
 ## P0 — Product foundation
@@ -62,7 +62,7 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 - [x] Write phased implementation plan and issue-sized checklist
 - [x] H0 — compatibility, pinned runtime, and rollback baseline (compatibility/manifest implemented; target runtime remains disabled until conformance)
 - [x] H1 — common `WorkerAdapter` and capability snapshots
-- [ ] H2 — local Hermes worktree vertical slice
+- [x] H2 — local Hermes worktree vertical slice (fixture/conformance; adapter still disabled pending 0.20 live review)
 - [ ] H3 — authenticated events and grounded citation evidence
 - [ ] H4 — API and console operator surfaces
 - [ ] H5 — optional A2A edge after explicit approval
@@ -73,5 +73,4 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 After each major implementation slice:
 
 1. Update [STATUS.md](./STATUS.md) and this file
-2. Re-index with Codegraph (`codegraph init` once; then refresh/reindex per tool docs)
-3. Prefer `codegraph_explore` for file/symbol lookup — avoid full-repo Grep/Glob sweeps when index exists
+2. Prefer `codegraph_explore` for file/symbol lookup when `.codegraph/` exists — avoid full-repo Grep/Glob sweeps. The operator updates the Codegraph index manually; agents do not run `codegraph init` / `sync` / `index`.
