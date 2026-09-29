@@ -24,7 +24,20 @@ npm run control-plane -- plan --workspace .. --manifest path/to/manifest.yaml
 npm run control-plane -- run --workspace .. --assignment <assignment-id>
 npm run control-plane -- ingest --workspace ..
 npm run control-plane -- status --workspace ..
+npm run control-plane -- get-lease-status --workspace .. --scopes src/**,docs/**
+npm run control-plane -- get-task-state --workspace .. --tasks task-a,task-b
 ```
+
+`get-lease-status` and `get-task-state` are read-only advisory queries (`api_version: "1.0"`). They do not initialize the database, take write leases, or record commands. A successful body has `ok: true` and `safe_to_proceed: true`, which means the snapshot is authoritative — not that a scope is free. Lease safety is `conflict_risk === "none"`. Every failure uses the same envelope and `safe_to_proceed: false`:
+
+| Code | When |
+|---|---|
+| `KERNEL_UNREACHABLE` | `control-plane.db` is missing or cannot be opened |
+| `LOCK_HELD_TIMEOUT` | Another control-plane writer holds `control-plane.lock` through the read timeout |
+| `SCHEMA_VERSION_MISMATCH` | `api_version` is present and is not `"1.0"` |
+| `MALFORMED_REQUEST` | Body is not a valid `LeaseStatusQuery` or `TaskStateQuery` |
+
+`conflict_risk` is `none | exact | ancestor | descendant | partial` from the shared scope classifier. `getTaskState` reports the latest execution state, or the assignment status when execution has not started. `evidence_gated` is true only when that execution has a verification evidence row. The same reads are `POST /api/orchestrator/v1/leases/status` and `POST /api/orchestrator/v1/tasks/state`.
 
 `plan` pulls open GitHub Issues create-only when `.autoclaw/orchestrator/github-issues.yaml` exists and `enabled: true`. Missing file skips sync so CI and kernel tests never invoke `gh`. Accepted verdicts comment and close linked issues; issue bodies are never rewritten. Contract: [schemas/github-issues-sync.md](../schemas/github-issues-sync.md).
 

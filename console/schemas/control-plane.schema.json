@@ -1,6 +1,214 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "definitions": {
+    "AdvisoryReadErrorCode": {
+      "type": "string",
+      "enum": [
+        "KERNEL_UNREACHABLE",
+        "LOCK_HELD_TIMEOUT",
+        "SCHEMA_VERSION_MISMATCH",
+        "MALFORMED_REQUEST"
+      ]
+    },
+    "ConflictRisk": {
+      "type": "string",
+      "enum": [
+        "none",
+        "exact",
+        "ancestor",
+        "descendant",
+        "partial"
+      ]
+    },
+    "AdvisoryReadError": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "ok": {
+          "type": "boolean",
+          "const": false
+        },
+        "safe_to_proceed": {
+          "type": "boolean",
+          "const": false
+        },
+        "code": {
+          "$ref": "#/definitions/AdvisoryReadErrorCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_version",
+        "ok",
+        "safe_to_proceed",
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "LeaseStatusQuery": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "query_scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "api_version",
+        "query_scopes"
+      ],
+      "additionalProperties": false
+    },
+    "LeaseStatusItem": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "type": "string"
+        },
+        "leased": {
+          "type": "boolean"
+        },
+        "lease_owner": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "conflict_risk": {
+          "$ref": "#/definitions/ConflictRisk"
+        }
+      },
+      "required": [
+        "scope",
+        "leased",
+        "lease_owner",
+        "conflict_risk"
+      ],
+      "additionalProperties": false
+    },
+    "LeaseStatusResult": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "ok": {
+          "type": "boolean",
+          "const": true
+        },
+        "safe_to_proceed": {
+          "type": "boolean",
+          "const": true
+        },
+        "leases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LeaseStatusItem"
+          }
+        }
+      },
+      "required": [
+        "api_version",
+        "ok",
+        "safe_to_proceed",
+        "leases"
+      ],
+      "additionalProperties": false
+    },
+    "TaskStateQuery": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "task_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "api_version",
+        "task_ids"
+      ],
+      "additionalProperties": false
+    },
+    "TaskStateItem": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string"
+        },
+        "found": {
+          "type": "boolean"
+        },
+        "state": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "terminal": {
+          "type": "boolean"
+        },
+        "evidence_gated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "task_id",
+        "found",
+        "state",
+        "terminal",
+        "evidence_gated"
+      ],
+      "additionalProperties": false
+    },
+    "TaskStateResult": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "ok": {
+          "type": "boolean",
+          "const": true
+        },
+        "safe_to_proceed": {
+          "type": "boolean",
+          "const": true
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TaskStateItem"
+          }
+        }
+      },
+      "required": [
+        "api_version",
+        "ok",
+        "safe_to_proceed",
+        "tasks"
+      ],
+      "additionalProperties": false
+    },
     "GuardMode": {
       "type": "string",
       "enum": [

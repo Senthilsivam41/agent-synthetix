@@ -31,16 +31,16 @@ contract tests pass; no behavioral diff in staging.
 
 **Goal:** expose live, race-free reads without granting DB access.
 
-- [ ] Define Ajv Draft 2020-12 schemas for both request/response pairs
+- [x] Define Ajv Draft 2020-12 schemas for both request/response pairs
       and the shared error envelope (`safe_to_proceed: false` always on
       non-success).
-- [ ] Implement handlers reading inside the kernel's existing
+- [x] Implement handlers reading inside the kernel's existing
       `BEGIN IMMEDIATE` transaction boundary — no new transaction model.
-- [ ] Wire `conflict_risk` computation through the Phase 0 primitive.
-- [ ] Fail-closed test matrix: `KERNEL_UNREACHABLE`, `LOCK_HELD_TIMEOUT`,
+- [x] Wire `conflict_risk` computation through the Phase 0 primitive.
+- [x] Fail-closed test matrix: `KERNEL_UNREACHABLE`, `LOCK_HELD_TIMEOUT`,
       `SCHEMA_VERSION_MISMATCH`, `MALFORMED_REQUEST` — assert every path
       returns the same envelope shape.
-- [ ] Document as a versioned public contract (`api_version: "1.0"`) in
+- [x] Document as a versioned public contract (`api_version: "1.0"`) in
       `docs/control-plane.md`.
 
 **Exit criteria:** advisory linter can query live lease/task state

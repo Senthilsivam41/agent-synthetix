@@ -18,7 +18,12 @@ type ContractName =
   | "AdapterRegistration"
   | "CapabilitySnapshot"
   | "HermesCompletionContract"
-  | "ExternalRunRecord";
+  | "ExternalRunRecord"
+  | "LeaseStatusQuery"
+  | "LeaseStatusResult"
+  | "TaskStateQuery"
+  | "TaskStateResult"
+  | "AdvisoryReadError";
 
 type SchemaBundle = {
   $id: string;

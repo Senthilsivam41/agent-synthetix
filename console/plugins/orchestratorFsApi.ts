@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Plugin, Connect } from "vite";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { advisoryHttpStatus, advisoryReadError, queryLeaseStatus, queryTaskState } from "./control-plane/advisory-read";
 import { ControlPlaneKernel } from "./control-plane/kernel";
 import { WorkspaceLock } from "./control-plane/store";
 import { applyClarificationAnswers, atomicWriteText, inspectPlan, parseClarifications, parseJsonLines, readText } from "./orchestratorFiles";
@@ -90,6 +91,18 @@ export function orchestratorFsApi(opts: Options): Plugin {
       }
 
       if (pathname.startsWith("/api/orchestrator/v1/")) {
+        if ((req.method === "POST" && pathname === "/api/orchestrator/v1/leases/status") || (req.method === "POST" && pathname === "/api/orchestrator/v1/tasks/state")) {
+          if (!kernel || !ready) return sendJson(res, 503, advisoryReadError("KERNEL_UNREACHABLE", "control-plane kernel is not initialized"));
+          await ready;
+          let body: unknown;
+          try { body = JSON.parse(await readBody(req)); }
+          catch (error) {
+            const failure = advisoryReadError("MALFORMED_REQUEST", error instanceof Error ? error.message : String(error));
+            return sendJson(res, advisoryHttpStatus(failure.code), failure);
+          }
+          const result = pathname.endsWith("/leases/status") ? queryLeaseStatus(kernel, body) : queryTaskState(kernel, body);
+          return sendJson(res, result.ok ? 200 : advisoryHttpStatus(result.code), result);
+        }
         if (!kernel || !ready) throw new Error("control-plane kernel is not initialized");
         await ready;
 

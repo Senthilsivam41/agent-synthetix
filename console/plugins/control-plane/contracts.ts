@@ -1,4 +1,60 @@
 export const SCHEMA_VERSION = "1.0" as const;
+export const ADVISORY_READ_API_VERSION = "1.0" as const;
+
+export type AdvisoryReadErrorCode =
+  | "KERNEL_UNREACHABLE"
+  | "LOCK_HELD_TIMEOUT"
+  | "SCHEMA_VERSION_MISMATCH"
+  | "MALFORMED_REQUEST";
+
+export type ConflictRisk = "none" | "exact" | "ancestor" | "descendant" | "partial";
+
+export type AdvisoryReadError = {
+  api_version: typeof ADVISORY_READ_API_VERSION;
+  ok: false;
+  safe_to_proceed: false;
+  code: AdvisoryReadErrorCode;
+  message: string;
+};
+
+export type LeaseStatusQuery = {
+  api_version: typeof ADVISORY_READ_API_VERSION;
+  query_scopes: string[];
+};
+
+export type LeaseStatusItem = {
+  scope: string;
+  leased: boolean;
+  lease_owner: string | null;
+  conflict_risk: ConflictRisk;
+};
+
+export type LeaseStatusResult = {
+  api_version: typeof ADVISORY_READ_API_VERSION;
+  ok: true;
+  safe_to_proceed: true;
+  leases: LeaseStatusItem[];
+};
+
+export type TaskStateQuery = {
+  api_version: typeof ADVISORY_READ_API_VERSION;
+  task_ids: string[];
+};
+
+export type TaskStateItem = {
+  task_id: string;
+  found: boolean;
+  state: string | null;
+  terminal: boolean;
+  evidence_gated: boolean;
+};
+
+export type TaskStateResult = {
+  api_version: typeof ADVISORY_READ_API_VERSION;
+  ok: true;
+  safe_to_proceed: true;
+  tasks: TaskStateItem[];
+};
 
 export type GuardMode = "report" | "warn" | "enforce";
 export type ExecutionState =

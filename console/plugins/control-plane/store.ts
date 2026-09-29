@@ -5,6 +5,20 @@ import { createHash, randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import type { AdapterRegistration, CapabilitySnapshot, ExecutionEvent, ExecutionState, ExternalRunRecord, GuardFinding } from "./contracts";
 
+export class LockHeldError extends Error {
+  readonly code = "LOCK_HELD_TIMEOUT" as const;
+
+  constructor(detail: string) {
+    super(`control-plane lock held: ${detail}`);
+    this.name = "LockHeldError";
+  }
+}
+
+function waitMs(ms: number) {
+  if (ms <= 0) return;
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
 export class WorkspaceLock {
   private fd: number | null = null;
   readonly lockPath: string;
@@ -13,24 +27,35 @@ export class WorkspaceLock {
     this.lockPath = path.join(root, "control-plane.lock");
   }
 
-  acquire(owner: string) {
+  acquire(owner: string, options?: { timeoutMs?: number }) {
     fs.mkdirSync(path.dirname(this.lockPath), { recursive: true });
+    const timeoutMs = options?.timeoutMs;
+    const deadline = timeoutMs === undefined ? Date.now() : Date.now() + Math.max(0, timeoutMs);
     const claim = () => {
       this.fd = fs.openSync(this.lockPath, "wx", 0o600);
       fs.writeFileSync(this.fd, JSON.stringify({ pid: process.pid, owner, acquired_at: new Date().toISOString() }));
     };
-    try {
-      claim();
-    } catch (error) {
-      const current = fs.existsSync(this.lockPath) ? fs.readFileSync(this.lockPath, "utf8") : "unknown";
+    const fail = (current: string, cause: unknown) => {
+      if (timeoutMs === undefined) throw new Error(`control-plane writer already active: ${current}`, { cause });
+      throw new LockHeldError(current);
+    };
+    for (;;) {
       try {
-        const pid = Number((JSON.parse(current) as { pid?: number }).pid);
-        process.kill(pid, 0);
-      } catch {
-        try { fs.unlinkSync(this.lockPath); } catch { /* raced with owner cleanup */ }
-        try { claim(); return; } catch { /* another writer won the retry */ }
+        claim();
+        return;
+      } catch (error) {
+        if (this.fd !== null) throw error;
+        const current = fs.existsSync(this.lockPath) ? fs.readFileSync(this.lockPath, "utf8") : "unknown";
+        try {
+          const pid = Number((JSON.parse(current) as { pid?: number }).pid);
+          process.kill(pid, 0);
+        } catch {
+          try { fs.unlinkSync(this.lockPath); } catch { /* raced with owner cleanup */ }
+          try { claim(); return; } catch { /* another writer won the retry */ }
+        }
+        if (Date.now() >= deadline) fail(current, error);
+        waitMs(Math.min(25, Math.max(1, deadline - Date.now())));
       }
-      throw new Error(`control-plane writer already active: ${current}`, { cause: error });
     }
   }
 
