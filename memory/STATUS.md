@@ -1,8 +1,8 @@
 # Current status
 
-**Updated:** 2026-08-18
-**Branch:** `codex/hermes-h0-h1-worker-adapters`
-**Last slice:** H2 Hermes Agent local worktree fixture slice (adapter still disabled)
+**Updated:** 2026-09-30
+**Branch:** `feature/dependency-graph-phase-2`
+**Last slice:** Dependency-graph Phase 2 single-instance edge log (`depgraph.db`)
 
 ## Product shape
 
@@ -76,6 +76,17 @@ Present in `.agent/rules/orchestrate.md`:
 cd console && npm install && npm run dev
 # http://localhost:5173
 ```
+
+## Dependency graph
+
+| Phase | Status |
+|---|---|
+| 0 Shared scope primitive | Done |
+| 1 `getLeaseStatus` / `getTaskState` | Done |
+| 2 Edge log in `depgraph.db` (one process, no HA) | Done |
+| 3–6 Validator, notification, HA, doc merge | Not started |
+
+Phase 2 stores advisory `depends_on` edges outside `control-plane.db`. Ownership is `task_owners` in the edge log. Adds are idempotent; removes set `removed_at`. A successful write is not a cycle admission.
 
 ## Known gaps
 

@@ -1,6 +1,10 @@
 #!/usr/bin/env node
+import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { executeAdvisoryRead } from "./advisory-read";
+import { EDGE_LOG_API_VERSION } from "./contracts";
+import { executeEdgeLog, type EdgeLogCommand } from "../depgraph/edge-log";
 import { ControlPlaneKernel } from "./kernel";
 import { WorkspaceLock } from "./store";
 
@@ -24,10 +28,78 @@ function workspaceRoot() {
 
 function print(value: unknown) { process.stdout.write(`${JSON.stringify(value, null, 2)}\n`); }
 
+function edgeCommandName(command: string): EdgeLogCommand | null {
+  switch (command) {
+    case "edge-claim": return "claim";
+    case "edge-add": return "add";
+    case "edge-remove": return "remove";
+    case "edge-dependents": return "dependents";
+    default: return null;
+  }
+}
+
+function edgeRequest(command: EdgeLogCommand) {
+  const requestPath = flag("request");
+  if (requestPath) return JSON.parse(fs.readFileSync(requestPath, "utf8")) as unknown;
+  const request: Record<string, unknown> = { api_version: flag("api-version") ?? EDGE_LOG_API_VERSION };
+  const actor = flag("actor");
+  if (command === "dependents") {
+    const task = flag("task");
+    if (task !== undefined) request.task_id = task;
+    return request;
+  }
+  if (actor !== undefined) request.actor = actor;
+  if (command === "claim") {
+    const task = flag("task");
+    if (task !== undefined) request.task_id = task;
+    return request;
+  }
+  const addedBy = flag("added-by") ?? actor;
+  if (addedBy !== undefined) request.added_by = addedBy;
+  const from = flag("from");
+  const to = flag("to");
+  if (from !== undefined) request.from_task = from;
+  if (to !== undefined) request.to_task = to;
+  return request;
+}
+
+function advisoryRequest(command: "get-lease-status" | "get-task-state") {
+  const requestPath = flag("request");
+  if (requestPath) return JSON.parse(fs.readFileSync(requestPath, "utf8")) as unknown;
+  const request: Record<string, unknown> = { api_version: flag("api-version") ?? "1.0" };
+  if (command === "get-lease-status") {
+    const scopes = flag("scopes");
+    if (scopes !== undefined) request.query_scopes = scopes.split(",").map((scope) => scope.trim()).filter(Boolean);
+  } else {
+    const tasks = flag("tasks");
+    if (tasks !== undefined) request.task_ids = tasks.split(",").map((task) => task.trim()).filter(Boolean);
+  }
+  return request;
+}
+
 async function main() {
   const command = process.argv[2];
-  if (!command) throw new Error("usage: control-plane <init|plan|run|retry|ingest|reconcile|status|cancel|cleanup|register-agent|register-adapter|create-session> [options]");
+  if (!command) throw new Error("usage: control-plane <init|plan|run|retry|ingest|reconcile|status|cancel|cleanup|register-agent|register-adapter|create-session|get-lease-status|get-task-state|edge-claim|edge-add|edge-remove|edge-dependents> [options]");
   const workspace = workspaceRoot();
+  const edgeCommand = edgeCommandName(command);
+  if (edgeCommand) {
+    let request: unknown;
+    try { request = edgeRequest(edgeCommand); }
+    catch (error) { request = { api_version: flag("api-version") ?? EDGE_LOG_API_VERSION, invalid_request: error instanceof Error ? error.message : String(error) }; }
+    const result = executeEdgeLog({ command: edgeCommand, workspace, request });
+    print(result);
+    if (!result.ok) process.exitCode = 1;
+    return;
+  }
+  if (command === "get-lease-status" || command === "get-task-state") {
+    let request: unknown;
+    try { request = advisoryRequest(command); }
+    catch (error) { request = { api_version: flag("api-version") ?? "1.0", invalid_request: error instanceof Error ? error.message : String(error) }; }
+    const result = executeAdvisoryRead({ command, workspace, request });
+    print(result);
+    if (!result.ok) process.exitCode = 1;
+    return;
+  }
   const lock = new WorkspaceLock(path.join(workspace, ".autoclaw", "orchestrator"));
   lock.acquire(`headless:${command}`);
   const kernel = new ControlPlaneKernel(workspace);

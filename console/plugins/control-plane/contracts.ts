@@ -1,4 +1,129 @@
 export const SCHEMA_VERSION = "1.0" as const;
+export const ADVISORY_READ_API_VERSION = "1.0" as const;
+export const EDGE_LOG_API_VERSION = "1.0" as const;
+
+export type AdvisoryReadErrorCode =
+  | "KERNEL_UNREACHABLE"
+  | "LOCK_HELD_TIMEOUT"
+  | "SCHEMA_VERSION_MISMATCH"
+  | "MALFORMED_REQUEST";
+
+export type ConflictRisk = "none" | "exact" | "ancestor" | "descendant" | "partial";
+
+export type AdvisoryReadError = {
+  api_version: typeof ADVISORY_READ_API_VERSION;
+  ok: false;
+  safe_to_proceed: false;
+  code: AdvisoryReadErrorCode;
+  message: string;
+};
+
+export type LeaseStatusQuery = {
+  api_version: typeof ADVISORY_READ_API_VERSION;
+  query_scopes: string[];
+};
+
+export type LeaseStatusItem = {
+  scope: string;
+  leased: boolean;
+  lease_owner: string | null;
+  conflict_risk: ConflictRisk;
+};
+
+export type LeaseStatusResult = {
+  api_version: typeof ADVISORY_READ_API_VERSION;
+  ok: true;
+  safe_to_proceed: true;
+  leases: LeaseStatusItem[];
+};
+
+export type TaskStateQuery = {
+  api_version: typeof ADVISORY_READ_API_VERSION;
+  task_ids: string[];
+};
+
+export type TaskStateItem = {
+  task_id: string;
+  found: boolean;
+  state: string | null;
+  terminal: boolean;
+  evidence_gated: boolean;
+};
+
+export type TaskStateResult = {
+  api_version: typeof ADVISORY_READ_API_VERSION;
+  ok: true;
+  safe_to_proceed: true;
+  tasks: TaskStateItem[];
+};
+
+export type EdgeLogErrorCode =
+  | "EDGE_LOG_UNAVAILABLE"
+  | "SCHEMA_VERSION_MISMATCH"
+  | "MALFORMED_REQUEST"
+  | "OWNERSHIP_REJECTED";
+
+export type EdgeLogError = {
+  api_version: typeof EDGE_LOG_API_VERSION;
+  ok: false;
+  safe_to_proceed: false;
+  code: EdgeLogErrorCode;
+  message: string;
+};
+
+export type ClaimTaskRequest = {
+  api_version: typeof EDGE_LOG_API_VERSION;
+  actor: string;
+  task_id: string;
+};
+
+export type ClaimTaskResult = {
+  api_version: typeof EDGE_LOG_API_VERSION;
+  ok: true;
+  safe_to_proceed: true;
+  task_id: string;
+  agent_id: string;
+  created: boolean;
+};
+
+export type EdgeWriteRequest = {
+  api_version: typeof EDGE_LOG_API_VERSION;
+  actor: string;
+  added_by: string;
+  from_task: string;
+  to_task: string;
+};
+
+export type StoredDependencyEdge = {
+  from_task: string;
+  to_task: string;
+  added_by: string;
+  added_at: string;
+  removed_at: string | null;
+  epoch: number;
+};
+
+export type EdgeMutationResult = {
+  api_version: typeof EDGE_LOG_API_VERSION;
+  ok: true;
+  safe_to_proceed: true;
+  operation: "add" | "remove";
+  applied: boolean;
+  edge: StoredDependencyEdge | null;
+};
+
+export type DependentsQuery = {
+  api_version: typeof EDGE_LOG_API_VERSION;
+  task_id: string;
+};
+
+export type DependentsResult = {
+  api_version: typeof EDGE_LOG_API_VERSION;
+  ok: true;
+  safe_to_proceed: true;
+  task_id: string;
+  dependents: StoredDependencyEdge[];
+};
 
 export type GuardMode = "report" | "warn" | "enforce";
 export type ExecutionState =

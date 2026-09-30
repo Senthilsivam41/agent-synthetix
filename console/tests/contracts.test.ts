@@ -17,7 +17,7 @@ const validVerdict = {
 
 describe("versioned contracts and lifecycle", () => {
   it("publishes every control-plane schema", () => {
-    expect(Object.keys(CONTRACT_SCHEMAS)).toEqual(expect.arrayContaining(["AgentProfile", "AgentSession", "TaskAssignment", "ExecutionEvent", "ArtifactManifest", "VerificationEvidence", "ReviewRequest", "ReviewVerdict", "ExecutionSummary", "GuardFinding", "AdapterRegistration", "CapabilitySnapshot", "HermesCompletionContract", "ExternalRunRecord"]));
+    expect(Object.keys(CONTRACT_SCHEMAS)).toEqual(expect.arrayContaining(["AgentProfile", "AgentSession", "TaskAssignment", "ExecutionEvent", "ArtifactManifest", "VerificationEvidence", "ReviewRequest", "ReviewVerdict", "ExecutionSummary", "GuardFinding", "AdapterRegistration", "CapabilitySnapshot", "HermesCompletionContract", "ExternalRunRecord", "LeaseStatusQuery", "LeaseStatusResult", "TaskStateQuery", "TaskStateResult", "AdvisoryReadError", "EdgeLogError", "ClaimTaskRequest", "ClaimTaskResult", "EdgeWriteRequest", "EdgeMutationResult", "DependentsQuery", "DependentsResult"]));
   });
 
   it("rejects unknown schema versions and malformed verdicts", () => {

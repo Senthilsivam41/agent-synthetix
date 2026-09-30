@@ -31,16 +31,16 @@ contract tests pass; no behavioral diff in staging.
 
 **Goal:** expose live, race-free reads without granting DB access.
 
-- [ ] Define Ajv Draft 2020-12 schemas for both request/response pairs
+- [x] Define Ajv Draft 2020-12 schemas for both request/response pairs
       and the shared error envelope (`safe_to_proceed: false` always on
       non-success).
-- [ ] Implement handlers reading inside the kernel's existing
+- [x] Implement handlers reading inside the kernel's existing
       `BEGIN IMMEDIATE` transaction boundary — no new transaction model.
-- [ ] Wire `conflict_risk` computation through the Phase 0 primitive.
-- [ ] Fail-closed test matrix: `KERNEL_UNREACHABLE`, `LOCK_HELD_TIMEOUT`,
+- [x] Wire `conflict_risk` computation through the Phase 0 primitive.
+- [x] Fail-closed test matrix: `KERNEL_UNREACHABLE`, `LOCK_HELD_TIMEOUT`,
       `SCHEMA_VERSION_MISMATCH`, `MALFORMED_REQUEST` — assert every path
       returns the same envelope shape.
-- [ ] Document as a versioned public contract (`api_version: "1.0"`) in
+- [x] Document as a versioned public contract (`api_version: "1.0"`) in
       `docs/control-plane.md`.
 
 **Exit criteria:** advisory linter can query live lease/task state
@@ -54,19 +54,28 @@ end-to-end in a local dev cluster; no code path returns an ambiguous
 **Goal:** durable, schema-correct storage for `depends_on` edges, proven
 before adding replica/failover complexity.
 
-- [ ] SQLite schema:
+- [x] SQLite schema:
       `dependency_edges(from_task, to_task, added_by, added_at, removed_at, epoch)`.
-- [ ] Enforce ownership rule at the write layer: reject any write where
+- [x] Enforce ownership rule at the write layer: reject any write where
       `added_by` does not match the authenticated identity of `from_task`'s
       owning agent.
-- [ ] Implement OR-Set semantics: `INSERT OR IGNORE` for adds,
+- [x] Implement OR-Set semantics: `INSERT OR IGNORE` for adds,
       soft-delete via `removed_at` (never physical delete) for
       observed-remove behavior.
-- [ ] Reverse-index query: given a task, return all live edges where it
+- [x] Reverse-index query: given a task, return all live edges where it
       is the `to_task` (i.e., who depends on it) — this is what powers
       targeted notification in Phase 4.
-- [ ] Deploy as a single pod first — no StatefulSet, no PVC-follows-leader
+- [x] Deploy as a single pod first — no StatefulSet, no PVC-follows-leader
       yet. Validate schema and query correctness in isolation.
+
+Shipped as one Node process plus `.autoclaw/orchestrator/depgraph.db`.
+Task ownership lives in that database (`task_owners`), not in
+`control-plane.db`. The request `actor` is the authenticated identity;
+`added_by` must match it and the owner of `from_task`. Every row is
+stamped `epoch = 1` until Phase 5 fencing. An internal `add_tag` lets a
+soft-deleted row remain beside a later add. Live edges are unique on
+`(from_task, to_task)`. Cycle admission is still Phase 3: a successful
+write means the edge was stored, not that it was checked for a cycle.
 
 **Exit criteria:** edges can be added, soft-removed, and queried
 correctly under concurrent writes from multiple test agents; reverse

@@ -3,6 +3,8 @@ import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import YAML from "yaml";
 import {
+  type LeaseStatusItem,
+  type TaskStateItem,
   SCHEMA_VERSION,
   STATE_TRANSITIONS,
   TERMINAL_STATES,
@@ -37,11 +39,22 @@ import {
   writebackFingerprint,
   type GitHubIssuesClient,
 } from "./github-issues";
-import { anyScopeOverlap, filesOutsideScopes, listRepositoryFiles, normalizeScope } from "./scope";
+import { anyScopeOverlap, filesOutsideScopes, listRepositoryFiles, normalizeScope, scopesOverlap, type OverlapKind } from "./scope";
 import { parseExecutionEvent, parseReviewVerdict, validateContract } from "./schemas";
 import { ControlPlaneStore } from "./store";
 
 type Row = Record<string, unknown>;
+
+const CONFLICT_RANK: Record<OverlapKind, number> = { none: 0, partial: 1, ancestor: 2, descendant: 3, exact: 4 };
+
+export class MalformedAdvisoryReadError extends Error {
+  readonly code = "MALFORMED_REQUEST" as const;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "MalformedAdvisoryReadError";
+  }
+}
 
 function now() { return new Date().toISOString(); }
 
@@ -494,6 +507,57 @@ export class ControlPlaneKernel {
     this.store.setSetting("guard_mode", "enforce");
     await this.writeStatusViews();
     return { imported, guard_mode: "enforce" };
+  }
+
+  getLeaseStatus(queryScopes: string[]): LeaseStatusItem[] {
+    const scopes = queryScopes.map((scope) => {
+      try { return normalizeScope(scope, true); }
+      catch (error) { throw new MalformedAdvisoryReadError(error instanceof Error ? error.message : String(error)); }
+    });
+    let repositoryFiles: string[] = [];
+    try { repositoryFiles = listRepositoryFiles(this.workspaceRoot); }
+    catch (error) { throw new Error(`repository file list failed: ${error instanceof Error ? error.message : String(error)}`); }
+    const active = this.store.transaction(() => this.store.db.prepare(`
+      SELECT l.scope, l.acquired_at, e.worker_agent_id AS owner
+      FROM scope_leases l
+      JOIN executions e ON e.execution_id = l.execution_id
+      WHERE l.released_at IS NULL AND l.expires_at > ?
+    `).all(now()) as Array<{ scope: string; acquired_at: string; owner: string }>);
+    return scopes.map((scope) => {
+      let best: { kind: OverlapKind; owner: string; acquiredAt: string } | null = null;
+      for (const lease of active) {
+        const kind = scopesOverlap(scope, String(lease.scope), repositoryFiles);
+        if (kind === "none") continue;
+        if (!best || CONFLICT_RANK[kind] > CONFLICT_RANK[best.kind] || (kind === best.kind && String(lease.acquired_at) < best.acquiredAt)) {
+          best = { kind, owner: String(lease.owner), acquiredAt: String(lease.acquired_at) };
+        }
+      }
+      return {
+        scope,
+        leased: best !== null,
+        lease_owner: best?.owner ?? null,
+        conflict_risk: best?.kind ?? "none",
+      };
+    });
+  }
+
+  getTaskState(taskIds: string[]): TaskStateItem[] {
+    return this.store.transaction(() => taskIds.map((taskId) => {
+      if (!taskId) throw new MalformedAdvisoryReadError("task_id must be non-empty");
+      const assignment = this.store.db.prepare("SELECT assignment_id, status FROM assignments WHERE task_id=? ORDER BY created_at DESC LIMIT 1").get(taskId) as Row | undefined;
+      if (!assignment) return { task_id: taskId, found: false, state: null, terminal: false, evidence_gated: false };
+      const execution = this.store.db.prepare("SELECT execution_id, state FROM executions WHERE assignment_id=? ORDER BY updated_at DESC LIMIT 1").get(String(assignment.assignment_id)) as Row | undefined;
+      if (!execution) return { task_id: taskId, found: true, state: String(assignment.status), terminal: false, evidence_gated: false };
+      const state = String(execution.state);
+      const evidence = this.store.db.prepare("SELECT evidence_id FROM evidence WHERE execution_id=? LIMIT 1").get(String(execution.execution_id)) as Row | undefined;
+      return {
+        task_id: taskId,
+        found: true,
+        state,
+        terminal: TERMINAL_STATES.has(state as ExecutionState),
+        evidence_gated: Boolean(evidence),
+      };
+    }));
   }
 
   status() {
