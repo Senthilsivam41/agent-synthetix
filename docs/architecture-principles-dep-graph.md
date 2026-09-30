@@ -82,7 +82,7 @@ Do not conflate stores. Each has one job:
 | KDream memory | `.autoclaw/kdream/memory/MEMORY.md` | Long-lived project memory (append-only) |
 | Orchestrator board | `.autoclaw/orchestrator/` | Sprint DAG, assignments, inboxes, consensus, heartbeats |
 | Control-plane store | `.autoclaw/orchestrator/control-plane.db` | Kernel-managed identities, leases, executions, events, evidence, and reviews |
-| Runtime dependency edge log (design — not yet implemented) | `.autoclaw/orchestrator/depgraph.db` | Live, agent-updatable `depends_on` edges (advisory plane — see §4.3); distinct from `control-plane.db` and from Orchestrate's plan-time `depends_on` (§5.1) |
+| Runtime dependency edge log | `.autoclaw/orchestrator/depgraph.db` | Live, agent-updatable `depends_on` edges (advisory plane — see §4.3). Single-instance storage is implemented. Cycle admission, notification, and HA are not. Distinct from `control-plane.db` and from Orchestrate's plan-time `depends_on` (§5.1) |
 
 `/index-code` writes **only** the vector store. `/learn` and the orchestrator write the KG. Hand-authored copies of generated steering files (e.g. `AGENT-ORIENTATION.md`) are forbidden — they drift.
 
@@ -169,12 +169,14 @@ Agents never need a network round-trip to coordinate. The console is localhost-o
 
 Use Orchestrate for multi-agent parallelism across a repo; use MAteam for a disciplined single-task pipeline inside one host session.
 
-### 4.3 Runtime dependency edges (design — not yet implemented)
+### 4.3 Runtime dependency edges (storage shipped; admission and notification are not)
 
-> Per §9 Non-Goals, this section documents a design, not a shipped API.
-> Nothing below exists in rules or README yet; do not treat it as
-> present until it is. Related open questions and rationale live
-> alongside [BRAINSTORM.md](../BRAINSTORM.md).
+> Edge-log storage is implemented in `depgraph.db` (see
+> [control-plane.md](./control-plane.md)). Cycle admission, targeted
+> notification, and high availability are not implemented. Do not describe
+> this subsystem with collision-prevention or evidence-gated language.
+> Related open questions and rationale live alongside
+> [BRAINSTORM.md](../BRAINSTORM.md).
 
 Orchestrate's `depends_on` (§5.1) is a **plan-time** field: resolved once
 during `/orchestrate plan`, cycle-checked via Kahn's algorithm, fixed for
@@ -198,8 +200,9 @@ would coexist.
 - **Storage: OR-Set semantics, not a new replication engine.** Edges are
   add-heavy and rarely removed; idempotent-add / observed-remove
   (soft-delete) behavior is implemented as ordinary SQLite columns
-  (`added_by`, `added_at`, `removed_at`, `epoch`) in the proposed
-  `depgraph.db` (see §3.7) — advisory plane, never `control-plane.db`.
+  (`added_by`, `added_at`, `removed_at`, `epoch`) in `depgraph.db`
+  (see §3.7) — advisory plane, never `control-plane.db`. Cycle admission
+  on top of this store is not implemented.
 - **Admission: pessimistic, not optimistic.** DAG acyclicity needs a
   pre-write check ("would this edge create a cycle?"), which two
   concurrent optimistic writers cannot answer correctly in isolation —

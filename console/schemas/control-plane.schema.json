@@ -209,6 +209,263 @@
       ],
       "additionalProperties": false
     },
+    "EdgeLogErrorCode": {
+      "type": "string",
+      "enum": [
+        "EDGE_LOG_UNAVAILABLE",
+        "SCHEMA_VERSION_MISMATCH",
+        "MALFORMED_REQUEST",
+        "OWNERSHIP_REJECTED"
+      ]
+    },
+    "EdgeLogError": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "ok": {
+          "type": "boolean",
+          "const": false
+        },
+        "safe_to_proceed": {
+          "type": "boolean",
+          "const": false
+        },
+        "code": {
+          "$ref": "#/definitions/EdgeLogErrorCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_version",
+        "ok",
+        "safe_to_proceed",
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "ClaimTaskRequest": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "actor": {
+          "type": "string"
+        },
+        "task_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_version",
+        "actor",
+        "task_id"
+      ],
+      "additionalProperties": false
+    },
+    "ClaimTaskResult": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "ok": {
+          "type": "boolean",
+          "const": true
+        },
+        "safe_to_proceed": {
+          "type": "boolean",
+          "const": true
+        },
+        "task_id": {
+          "type": "string"
+        },
+        "agent_id": {
+          "type": "string"
+        },
+        "created": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "api_version",
+        "ok",
+        "safe_to_proceed",
+        "task_id",
+        "agent_id",
+        "created"
+      ],
+      "additionalProperties": false
+    },
+    "EdgeWriteRequest": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "actor": {
+          "type": "string"
+        },
+        "added_by": {
+          "type": "string"
+        },
+        "from_task": {
+          "type": "string"
+        },
+        "to_task": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_version",
+        "actor",
+        "added_by",
+        "from_task",
+        "to_task"
+      ],
+      "additionalProperties": false
+    },
+    "StoredDependencyEdge": {
+      "type": "object",
+      "properties": {
+        "from_task": {
+          "type": "string"
+        },
+        "to_task": {
+          "type": "string"
+        },
+        "added_by": {
+          "type": "string"
+        },
+        "added_at": {
+          "type": "string"
+        },
+        "removed_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "epoch": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "from_task",
+        "to_task",
+        "added_by",
+        "added_at",
+        "removed_at",
+        "epoch"
+      ],
+      "additionalProperties": false
+    },
+    "EdgeMutationResult": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "ok": {
+          "type": "boolean",
+          "const": true
+        },
+        "safe_to_proceed": {
+          "type": "boolean",
+          "const": true
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "add",
+            "remove"
+          ]
+        },
+        "applied": {
+          "type": "boolean"
+        },
+        "edge": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StoredDependencyEdge"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "api_version",
+        "ok",
+        "safe_to_proceed",
+        "operation",
+        "applied",
+        "edge"
+      ],
+      "additionalProperties": false
+    },
+    "DependentsQuery": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "task_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_version",
+        "task_id"
+      ],
+      "additionalProperties": false
+    },
+    "DependentsResult": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "ok": {
+          "type": "boolean",
+          "const": true
+        },
+        "safe_to_proceed": {
+          "type": "boolean",
+          "const": true
+        },
+        "task_id": {
+          "type": "string"
+        },
+        "dependents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StoredDependencyEdge"
+          }
+        }
+      },
+      "required": [
+        "api_version",
+        "ok",
+        "safe_to_proceed",
+        "task_id",
+        "dependents"
+      ],
+      "additionalProperties": false
+    },
     "GuardMode": {
       "type": "string",
       "enum": [

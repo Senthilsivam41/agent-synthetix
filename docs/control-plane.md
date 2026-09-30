@@ -39,6 +39,28 @@ npm run control-plane -- get-task-state --workspace .. --tasks task-a,task-b
 
 `conflict_risk` is `none | exact | ancestor | descendant | partial` from the shared scope classifier. `getTaskState` reports the latest execution state, or the assignment status when execution has not started. `evidence_gated` is true only when that execution has a verification evidence row. The same reads are `POST /api/orchestrator/v1/leases/status` and `POST /api/orchestrator/v1/tasks/state`.
 
+## Advisory edge log
+
+Runtime `depends_on` edges are stored in `.autoclaw/orchestrator/depgraph.db`. This is advisory-plane storage. It does not take `control-plane.lock`, does not write `control-plane.db`, and does not participate in collision prevention or evidence-gated completion. A successful response means the edge-log operation finished. It does not mean the edge was admitted by the cycle validator (that check is not implemented yet) and it does not mean dependents were notified.
+
+```bash
+npm run control-plane -- edge-claim --workspace .. --actor worker --task task-a
+npm run control-plane -- edge-add --workspace .. --actor worker --from task-a --to task-b
+npm run control-plane -- edge-remove --workspace .. --actor worker --from task-a --to task-b
+npm run control-plane -- edge-dependents --workspace .. --task task-b
+```
+
+`actor` is the authenticated identity for this single-instance log. `edge-add` stores `added_by` as `actor` unless `--added-by` is set. The write is rejected with `OWNERSHIP_REJECTED` unless `added_by` is `actor` and `actor` owns `from_task`. Ownership is the `task_owners` row created by `edge-claim`; the first claim wins and is not reassigned. Adds are idempotent while the edge is live (`INSERT OR IGNORE`). Remove sets `removed_at` and leaves the row in place. A later add inserts a new row. `edge-dependents` returns live edges whose `to_task` is the queried task.
+
+The HTTP routes are `POST /api/orchestrator/v1/edges/claim`, `POST /api/orchestrator/v1/edges`, `POST /api/orchestrator/v1/edges/remove`, and `POST /api/orchestrator/v1/edges/dependents`. Failures use `safe_to_proceed: false`:
+
+| Code | When |
+|---|---|
+| `EDGE_LOG_UNAVAILABLE` | `depgraph.db` cannot be opened or is a newer schema |
+| `SCHEMA_VERSION_MISMATCH` | `api_version` is present and is not `"1.0"` |
+| `MALFORMED_REQUEST` | Body is not a valid edge-log request |
+| `OWNERSHIP_REJECTED` | `added_by` or `actor` is not the owner of `from_task` |
+
 `plan` pulls open GitHub Issues create-only when `.autoclaw/orchestrator/github-issues.yaml` exists and `enabled: true`. Missing file skips sync so CI and kernel tests never invoke `gh`. Accepted verdicts comment and close linked issues; issue bodies are never rewritten. Contract: [schemas/github-issues-sync.md](../schemas/github-issues-sync.md).
 
 The default adapter is `mock`, so initialization is safe for CI. To use the live dual-router adapter, edit the gitignored `.autoclaw/orchestrator/control-plane.config.json`, set `mode` to `dual-router`, and configure the Python executable, local router path, models, timeout, grace period, and environment-variable allowlist. Secrets are inherited only through that allowlist and never placed in arguments.

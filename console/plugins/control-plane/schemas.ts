@@ -23,7 +23,14 @@ type ContractName =
   | "LeaseStatusResult"
   | "TaskStateQuery"
   | "TaskStateResult"
-  | "AdvisoryReadError";
+  | "AdvisoryReadError"
+  | "EdgeLogError"
+  | "ClaimTaskRequest"
+  | "ClaimTaskResult"
+  | "EdgeWriteRequest"
+  | "EdgeMutationResult"
+  | "DependentsQuery"
+  | "DependentsResult";
 
 type SchemaBundle = {
   $id: string;
