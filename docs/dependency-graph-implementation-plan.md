@@ -74,8 +74,9 @@ Task ownership lives in that database (`task_owners`), not in
 `added_by` must match it and the owner of `from_task`. Every row is
 stamped `epoch = 1` until Phase 5 fencing. An internal `add_tag` lets a
 soft-deleted row remain beside a later add. Live edges are unique on
-`(from_task, to_task)`. Cycle admission is still Phase 3: a successful
-write means the edge was stored, not that it was checked for a cycle.
+`(from_task, to_task)`. Phase 3 admits an edge only after the cycle
+check; a successful `edge-add` is an admitted edge. Notification and HA
+are still later phases.
 
 **Exit criteria:** edges can be added, soft-removed, and queried
 correctly under concurrent writes from multiple test agents; reverse
@@ -88,21 +89,29 @@ index returns correct dependents.
 **Goal:** prove component-scoped cycle prevention works correctly before
 adding leader election on top.
 
-- [ ] In-memory union-find structure, built from Edge Log's current
+- [x] In-memory union-find structure, built from Edge Log's current
       accepted-edge set on startup.
-- [ ] `wouldCreateCycle(proposedEdge)`: component-scoped reachability
+- [x] `wouldCreateCycle(proposedEdge)`: component-scoped reachability
       check per the design in §4.x.4 — confirm cost is proportional to
       local component size via a benchmark with clustered vs. sparse
       synthetic graphs.
-- [ ] Accept path: atomic local step — check, merge union-find, append to
+- [x] Accept path: atomic local step — check, merge union-find, append to
       Edge Log — as one indivisible critical section (single-threaded or
       locked) on this single instance.
-- [ ] Reject path surfaces `CYCLE_DETECTED` as a structured response, not
+- [x] Reject path surfaces `CYCLE_DETECTED` as a structured response, not
       a bare error — consistent with the choreography principle that the
       requesting agent's own logic decides what to do next (retry
       narrower dependency, drop it, escalate).
-- [ ] Startup/restart test: kill the process mid-run, restart, confirm it
+- [x] Startup/restart test: kill the process mid-run, restart, confirm it
       refuses new checks until index rebuild from the Edge Log completes.
+
+Shipped as one Node process. `edge-add` holds `depgraph-validator.lock`
+(not `control-plane.lock`), rebuilds the union-find from live rows, and
+appends only when the directed check passes. Callers that arrive while
+a restart is rebuilding receive `INDEX_REBUILDING`. There is no
+Kubernetes lease in this phase, so `NO_LEADER` and `STALE_EPOCH` are
+not produced. A successful add is an admitted edge. It is not a kernel
+collision guarantee, and it does not notify dependents.
 
 **Exit criteria:** cycle attempts are correctly rejected; non-cyclic
 concurrent writes succeed; restart-then-rebuild-before-serving is

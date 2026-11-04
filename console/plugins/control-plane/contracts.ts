@@ -61,7 +61,9 @@ export type EdgeLogErrorCode =
   | "EDGE_LOG_UNAVAILABLE"
   | "SCHEMA_VERSION_MISMATCH"
   | "MALFORMED_REQUEST"
-  | "OWNERSHIP_REJECTED";
+  | "OWNERSHIP_REJECTED"
+  | "CYCLE_DETECTED"
+  | "INDEX_REBUILDING";
 
 export type EdgeLogError = {
   api_version: typeof EDGE_LOG_API_VERSION;

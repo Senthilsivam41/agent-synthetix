@@ -41,7 +41,7 @@ npm run control-plane -- get-task-state --workspace .. --tasks task-a,task-b
 
 ## Advisory edge log
 
-Runtime `depends_on` edges are stored in `.autoclaw/orchestrator/depgraph.db`. This is advisory-plane storage. It does not take `control-plane.lock`, does not write `control-plane.db`, and does not participate in collision prevention or evidence-gated completion. A successful response means the edge-log operation finished. It does not mean the edge was admitted by the cycle validator (that check is not implemented yet) and it does not mean dependents were notified.
+Runtime `depends_on` edges are stored in `.autoclaw/orchestrator/depgraph.db`. This is advisory-plane storage. It does not take `control-plane.lock`, does not write `control-plane.db`, and does not participate in collision prevention or evidence-gated completion. `edge-add` is the admission gate: it rebuilds an in-memory union-find from the live edge log, rejects a cycle, and only then appends the row. A successful add means that edge was admitted and stored. It does not notify dependents.
 
 ```bash
 npm run control-plane -- edge-claim --workspace .. --actor worker --task task-a
@@ -52,14 +52,18 @@ npm run control-plane -- edge-dependents --workspace .. --task task-b
 
 `actor` is the authenticated identity for this single-instance log. `edge-add` stores `added_by` as `actor` unless `--added-by` is set. The write is rejected with `OWNERSHIP_REJECTED` unless `added_by` is `actor` and `actor` owns `from_task`. Ownership is the `task_owners` row created by `edge-claim`; the first claim wins and is not reassigned. Adds are idempotent while the edge is live (`INSERT OR IGNORE`). Remove sets `removed_at` and leaves the row in place. A later add inserts a new row. `edge-dependents` returns live edges whose `to_task` is the queried task.
 
+The cycle check walks only the undirected component that already contains the proposed target. An edge into a different component is admitted without that walk. `CYCLE_DETECTED` is the structured rejection when the target can already reach the source. While a restart is rebuilding the index, other callers receive `INDEX_REBUILDING` and retry; that response is not "no cycle". This process does not take a Kubernetes lease, so `NO_LEADER` and `STALE_EPOCH` are not produced yet.
+
 The HTTP routes are `POST /api/orchestrator/v1/edges/claim`, `POST /api/orchestrator/v1/edges`, `POST /api/orchestrator/v1/edges/remove`, and `POST /api/orchestrator/v1/edges/dependents`. Failures use `safe_to_proceed: false`:
 
 | Code | When |
 |---|---|
-| `EDGE_LOG_UNAVAILABLE` | `depgraph.db` cannot be opened or is a newer schema |
+| `EDGE_LOG_UNAVAILABLE` | `depgraph.db` cannot be opened or is a newer schema, or the validator critical section stays busy |
 | `SCHEMA_VERSION_MISMATCH` | `api_version` is present and is not `"1.0"` |
 | `MALFORMED_REQUEST` | Body is not a valid edge-log request |
 | `OWNERSHIP_REJECTED` | `added_by` or `actor` is not the owner of `from_task` |
+| `CYCLE_DETECTED` | The proposed edge would close a directed cycle |
+| `INDEX_REBUILDING` | A restart is rebuilding the union-find from the edge log |
 
 `plan` pulls open GitHub Issues create-only when `.autoclaw/orchestrator/github-issues.yaml` exists and `enabled: true`. Missing file skips sync so CI and kernel tests never invoke `gh`. Accepted verdicts comment and close linked issues; issue bodies are never rewritten. Contract: [schemas/github-issues-sync.md](../schemas/github-issues-sync.md).
 

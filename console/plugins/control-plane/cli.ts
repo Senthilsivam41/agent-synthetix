@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { executeAdvisoryRead } from "./advisory-read";
 import { EDGE_LOG_API_VERSION } from "./contracts";
 import { executeEdgeLog, type EdgeLogCommand } from "../depgraph/edge-log";
+import { admitDependencyEdge } from "../depgraph/validator";
 import { ControlPlaneKernel } from "./kernel";
 import { WorkspaceLock } from "./store";
 
@@ -86,7 +87,9 @@ async function main() {
     let request: unknown;
     try { request = edgeRequest(edgeCommand); }
     catch (error) { request = { api_version: flag("api-version") ?? EDGE_LOG_API_VERSION, invalid_request: error instanceof Error ? error.message : String(error) }; }
-    const result = executeEdgeLog({ command: edgeCommand, workspace, request });
+    const result = edgeCommand === "add"
+      ? admitDependencyEdge({ workspace, request })
+      : executeEdgeLog({ command: edgeCommand, workspace, request });
     print(result);
     if (!result.ok) process.exitCode = 1;
     return;

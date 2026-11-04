@@ -1,8 +1,8 @@
 ## §4.x Live Task Dependency Graph (`depends_on`)
 
-> Status: design accepted. Phase 2 storage is implemented in
-> `depgraph.db` (see [control-plane.md](./control-plane.md)). Cycle
-> admission, notification, and HA are not. This section extends the
+> Status: design accepted. Phase 2 storage and Phase 3 single-instance
+> cycle admission are implemented (see [control-plane.md](./control-plane.md)).
+> Notification and HA are not. This section extends the
 > dual-plane model defined in §4.1 — read that section first. Everything
 > below lives entirely on the **advisory compatibility plane**. Nothing
 > here alters, extends, or is covered by the ControlPlaneKernel's
