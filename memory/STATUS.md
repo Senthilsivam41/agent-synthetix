@@ -1,8 +1,8 @@
 # Current status
 
-**Updated:** 2026-09-30
-**Branch:** `feature/dependency-graph-phase-2`
-**Last slice:** Dependency-graph Phase 2 single-instance edge log (`depgraph.db`)
+**Updated:** 2026-11-04
+**Branch:** `feature/dependency-graph-phase-3`
+**Last slice:** Dependency-graph Phase 3 single-instance cycle admission
 
 ## Product shape
 
@@ -84,9 +84,10 @@ cd console && npm install && npm run dev
 | 0 Shared scope primitive | Done |
 | 1 `getLeaseStatus` / `getTaskState` | Done |
 | 2 Edge log in `depgraph.db` (one process, no HA) | Done |
-| 3–6 Validator, notification, HA, doc merge | Not started |
+| 3 Cycle admission (`CYCLE_DETECTED`, rebuild-before-serve) | Done |
+| 4–6 Notification, HA, doc merge | Not started |
 
-Phase 2 stores advisory `depends_on` edges outside `control-plane.db`. Ownership is `task_owners` in the edge log. Adds are idempotent; removes set `removed_at`. A successful write is not a cycle admission.
+Phase 3 admits `edge-add` only after a component-scoped cycle check. `INDEX_REBUILDING` is fail-closed while a restart rebuilds the union-find. Notification and Kubernetes leader election are not implemented.
 
 ## Known gaps
 

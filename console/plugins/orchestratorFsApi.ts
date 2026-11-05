@@ -4,6 +4,7 @@ import type { Plugin, Connect } from "vite";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { advisoryHttpStatus, advisoryReadError, queryLeaseStatus, queryTaskState } from "./control-plane/advisory-read";
 import { edgeLogCommandForPath, edgeLogError, edgeLogHttpStatus, executeEdgeLog } from "./depgraph/edge-log";
+import { admitDependencyEdge } from "./depgraph/validator";
 import { ControlPlaneKernel } from "./control-plane/kernel";
 import { WorkspaceLock } from "./control-plane/store";
 import { applyClarificationAnswers, atomicWriteText, inspectPlan, parseClarifications, parseJsonLines, readText } from "./orchestratorFiles";
@@ -100,7 +101,9 @@ export function orchestratorFsApi(opts: Options): Plugin {
             const failure = edgeLogError("MALFORMED_REQUEST", error instanceof Error ? error.message : String(error));
             return sendJson(res, edgeLogHttpStatus(failure.code), failure);
           }
-          const result = executeEdgeLog({ command: edgeCommand, workspace: opts.workspaceRoot, request: body });
+          const result = edgeCommand === "add"
+            ? admitDependencyEdge({ workspace: opts.workspaceRoot, request: body })
+            : executeEdgeLog({ command: edgeCommand, workspace: opts.workspaceRoot, request: body });
           return sendJson(res, result.ok ? 200 : edgeLogHttpStatus(result.code), result);
         }
         if ((req.method === "POST" && pathname === "/api/orchestrator/v1/leases/status") || (req.method === "POST" && pathname === "/api/orchestrator/v1/tasks/state")) {

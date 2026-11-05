@@ -51,6 +51,8 @@ export function edgeLogHttpStatus(code: EdgeLogErrorCode) {
     case "MALFORMED_REQUEST": return 400;
     case "OWNERSHIP_REJECTED": return 403;
     case "SCHEMA_VERSION_MISMATCH": return 409;
+    case "CYCLE_DETECTED": return 409;
+    case "INDEX_REBUILDING": return 503;
     case "EDGE_LOG_UNAVAILABLE": return 503;
   }
 }
@@ -137,8 +139,8 @@ export class EdgeLog {
     });
   }
 
-  add(input: unknown): EdgeMutationResult | EdgeLogError {
-    return this.mutate("add", input);
+  add(input: unknown, hooks?: { beforeCommit?: () => void }): EdgeMutationResult | EdgeLogError {
+    return this.mutate("add", input, hooks);
   }
 
   remove(input: unknown): EdgeMutationResult | EdgeLogError {
@@ -165,7 +167,24 @@ export class EdgeLog {
     return this.db.prepare("SELECT add_tag,from_task,to_task,added_by,added_at,removed_at,epoch FROM dependency_edges ORDER BY add_tag").all() as EdgeRow[];
   }
 
-  private mutate(operation: "add" | "remove", input: unknown): EdgeMutationResult | EdgeLogError {
+  liveEdgePairs() {
+    return this.db.prepare("SELECT from_task,to_task FROM dependency_edges WHERE removed_at IS NULL ORDER BY add_tag").all() as Array<{ from_task: string; to_task: string }>;
+  }
+
+  checkOwnership(input: unknown): EdgeLogError | null {
+    const request = this.parse<EdgeWriteRequest>("EdgeWriteRequest", input, "admit edge");
+    if (!request.ok) return request.error;
+    const write = request.value;
+    const problem = identifierProblem(write.actor, "actor")
+      ?? identifierProblem(write.added_by, "added_by")
+      ?? identifierProblem(write.from_task, "from_task")
+      ?? identifierProblem(write.to_task, "to_task");
+    if (problem) return edgeLogError("MALFORMED_REQUEST", problem);
+    if (write.from_task === write.to_task) return edgeLogError("MALFORMED_REQUEST", "from_task cannot depend on itself");
+    return this.rejectUnowned(write);
+  }
+
+  private mutate(operation: "add" | "remove", input: unknown, hooks?: { beforeCommit?: () => void }): EdgeMutationResult | EdgeLogError {
     const request = this.parse<EdgeWriteRequest>("EdgeWriteRequest", input, `${operation} edge`);
     if (!request.ok) return request.error;
     const write = request.value;
@@ -178,7 +197,7 @@ export class EdgeLog {
     return this.transaction(() => {
       const rejected = this.rejectUnowned(write);
       if (rejected) return rejected;
-      if (operation === "add") return this.insertEdge(write);
+      if (operation === "add") return this.insertEdge(write, hooks);
       return this.softRemove(write);
     });
   }
@@ -195,7 +214,7 @@ export class EdgeLog {
     return null;
   }
 
-  private insertEdge(write: EdgeWriteRequest): EdgeMutationResult | EdgeLogError {
+  private insertEdge(write: EdgeWriteRequest, hooks?: { beforeCommit?: () => void }): EdgeMutationResult | EdgeLogError {
     const live = this.liveEdge(write.from_task, write.to_task);
     if (live && live.added_by !== write.actor) {
       return edgeLogError("OWNERSHIP_REJECTED", `live edge ${write.from_task}->${write.to_task} is owned by ${live.added_by}`);
@@ -205,6 +224,7 @@ export class EdgeLog {
       VALUES(?,?,?,?,NULL,?)`).run(write.from_task, write.to_task, write.added_by, now(), epoch);
     const edge = this.liveEdge(write.from_task, write.to_task);
     if (!edge) throw new Error(`edge ${write.from_task}->${write.to_task} was not stored`);
+    if (Number(inserted.changes) > 0) hooks?.beforeCommit?.();
     return this.mutation("add", Number(inserted.changes) > 0, edge);
   }
 
