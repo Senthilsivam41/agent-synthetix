@@ -41,13 +41,14 @@ npm run control-plane -- get-task-state --workspace .. --tasks task-a,task-b
 
 ## Advisory edge log
 
-Runtime `depends_on` edges are stored in `.autoclaw/orchestrator/depgraph.db`. This is advisory-plane storage. It does not take `control-plane.lock`, does not write `control-plane.db`, and does not participate in collision prevention or evidence-gated completion. `edge-add` is the admission gate: it rebuilds an in-memory union-find from the live edge log, rejects a cycle, and only then appends the row. A successful add means that edge was admitted and stored. It does not notify dependents.
+Runtime `depends_on` edges are stored in `.autoclaw/orchestrator/depgraph.db`. This is advisory-plane storage. It does not take `control-plane.lock`, does not write `control-plane.db`, and does not participate in collision prevention or evidence-gated completion. `edge-add` is the admission gate: it rebuilds an in-memory union-find from the live edge log, rejects a cycle, and only then appends the row. A successful add means that edge was admitted and stored. It does not notify dependents. `edge-notify` is the separate write-back signal: after an agent stores its adapted advisory state, it names that task and a `writeback_id`. Live dependents, and only those dependents, receive `dependency_invalidated` in their existing inbox. The signal names the originating task, the notified task, and the edge epoch. It does not carry the plan.
 
 ```bash
 npm run control-plane -- edge-claim --workspace .. --actor worker --task task-a
 npm run control-plane -- edge-add --workspace .. --actor worker --from task-a --to task-b
 npm run control-plane -- edge-remove --workspace .. --actor worker --from task-a --to task-b
 npm run control-plane -- edge-dependents --workspace .. --task task-b
+npm run control-plane -- edge-notify --workspace .. --actor worker --task task-b --session session-1 --writeback wb-1
 ```
 
 `actor` is the authenticated identity for this single-instance log. `edge-add` stores `added_by` as `actor` unless `--added-by` is set. The write is rejected with `OWNERSHIP_REJECTED` unless `added_by` is `actor` and `actor` owns `from_task`. Ownership is the `task_owners` row created by `edge-claim`; the first claim wins and is not reassigned. Adds are idempotent while the edge is live (`INSERT OR IGNORE`). Remove sets `removed_at` and leaves the row in place. A later add inserts a new row. `edge-dependents` returns live edges whose `to_task` is the queried task.

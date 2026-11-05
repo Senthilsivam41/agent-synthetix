@@ -1,6 +1,6 @@
 # Future changes
 
-**Updated:** 2026-11-04
+**Updated:** 2026-11-05
 Prioritized backlog for Orchestrate console + soft-gate productization. Control-plane sequence: [Product Roadmap](../docs/product-roadmap.md). Hermes content sequence: [Architecture plan phases](../docs/architecture-plan-phases.md).
 
 ## P0 — Product foundation
@@ -74,7 +74,7 @@ Prioritized backlog for Orchestrate console + soft-gate productization. Control-
 - [x] Phase 1 — read-only `getLeaseStatus` / `getTaskState`
 - [x] Phase 2 — single-instance edge log (`depgraph.db`, ownership, observed-remove, reverse index)
 - [x] Phase 3 — dependency edge validator (component-scoped cycle check)
-- [ ] Phase 4 — targeted notification from the reverse index
+- [x] Phase 4 — targeted notification from the reverse index
 - [ ] Phase 5 — separate Kubernetes leases for validator and edge log
 - [ ] Phase 6 — merge the dependency-graph section into the architecture principles
 

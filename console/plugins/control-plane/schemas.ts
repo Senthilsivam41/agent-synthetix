@@ -30,7 +30,10 @@ type ContractName =
   | "EdgeWriteRequest"
   | "EdgeMutationResult"
   | "DependentsQuery"
-  | "DependentsResult";
+  | "DependentsResult"
+  | "DependencyNotifyRequest"
+  | "DependencyNotifyResult"
+  | "DependencySignal";
 
 type SchemaBundle = {
   $id: string;

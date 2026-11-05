@@ -4,8 +4,8 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { executeAdvisoryRead } from "./advisory-read";
 import { EDGE_LOG_API_VERSION } from "./contracts";
-import { executeEdgeLog, type EdgeLogCommand } from "../depgraph/edge-log";
-import { admitDependencyEdge } from "../depgraph/validator";
+import { type EdgeRouteName } from "../depgraph/edge-log";
+import { executeEdgeRoute } from "../depgraph/edge-route";
 import { ControlPlaneKernel } from "./kernel";
 import { WorkspaceLock } from "./store";
 
@@ -29,17 +29,18 @@ function workspaceRoot() {
 
 function print(value: unknown) { process.stdout.write(`${JSON.stringify(value, null, 2)}\n`); }
 
-function edgeCommandName(command: string): EdgeLogCommand | null {
+function edgeCommandName(command: string): EdgeRouteName | null {
   switch (command) {
     case "edge-claim": return "claim";
     case "edge-add": return "add";
     case "edge-remove": return "remove";
     case "edge-dependents": return "dependents";
+    case "edge-notify": return "notify";
     default: return null;
   }
 }
 
-function edgeRequest(command: EdgeLogCommand) {
+function edgeRequest(command: EdgeRouteName) {
   const requestPath = flag("request");
   if (requestPath) return JSON.parse(fs.readFileSync(requestPath, "utf8")) as unknown;
   const request: Record<string, unknown> = { api_version: flag("api-version") ?? EDGE_LOG_API_VERSION };
@@ -53,6 +54,15 @@ function edgeRequest(command: EdgeLogCommand) {
   if (command === "claim") {
     const task = flag("task");
     if (task !== undefined) request.task_id = task;
+    return request;
+  }
+  if (command === "notify") {
+    const task = flag("task");
+    const session = flag("session");
+    const writeback = flag("writeback");
+    if (task !== undefined) request.task_id = task;
+    if (session !== undefined) request.session_id = session;
+    if (writeback !== undefined) request.writeback_id = writeback;
     return request;
   }
   const addedBy = flag("added-by") ?? actor;
@@ -80,16 +90,14 @@ function advisoryRequest(command: "get-lease-status" | "get-task-state") {
 
 async function main() {
   const command = process.argv[2];
-  if (!command) throw new Error("usage: control-plane <init|plan|run|retry|ingest|reconcile|status|cancel|cleanup|register-agent|register-adapter|create-session|get-lease-status|get-task-state|edge-claim|edge-add|edge-remove|edge-dependents> [options]");
+  if (!command) throw new Error("usage: control-plane <init|plan|run|retry|ingest|reconcile|status|cancel|cleanup|register-agent|register-adapter|create-session|get-lease-status|get-task-state|edge-claim|edge-add|edge-remove|edge-dependents|edge-notify> [options]");
   const workspace = workspaceRoot();
   const edgeCommand = edgeCommandName(command);
   if (edgeCommand) {
     let request: unknown;
     try { request = edgeRequest(edgeCommand); }
     catch (error) { request = { api_version: flag("api-version") ?? EDGE_LOG_API_VERSION, invalid_request: error instanceof Error ? error.message : String(error) }; }
-    const result = edgeCommand === "add"
-      ? admitDependencyEdge({ workspace, request })
-      : executeEdgeLog({ command: edgeCommand, workspace, request });
+    const result = executeEdgeRoute({ command: edgeCommand, workspace, request });
     print(result);
     if (!result.ok) process.exitCode = 1;
     return;

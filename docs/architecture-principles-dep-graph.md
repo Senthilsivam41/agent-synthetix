@@ -82,7 +82,7 @@ Do not conflate stores. Each has one job:
 | KDream memory | `.autoclaw/kdream/memory/MEMORY.md` | Long-lived project memory (append-only) |
 | Orchestrator board | `.autoclaw/orchestrator/` | Sprint DAG, assignments, inboxes, consensus, heartbeats |
 | Control-plane store | `.autoclaw/orchestrator/control-plane.db` | Kernel-managed identities, leases, executions, events, evidence, and reviews |
-| Runtime dependency edge log | `.autoclaw/orchestrator/depgraph.db` | Live, agent-updatable `depends_on` edges (advisory plane — see §4.3). Single-instance storage and cycle admission are implemented. Notification and HA are not. Distinct from `control-plane.db` and from Orchestrate's plan-time `depends_on` (§5.1) |
+| Runtime dependency edge log | `.autoclaw/orchestrator/depgraph.db` | Live, agent-updatable `depends_on` edges (advisory plane — see §4.3). Single-instance storage, cycle admission, and targeted inbox notification are implemented. HA is not. Distinct from `control-plane.db` and from Orchestrate's plan-time `depends_on` (§5.1) |
 
 `/index-code` writes **only** the vector store. `/learn` and the orchestrator write the KG. Hand-authored copies of generated steering files (e.g. `AGENT-ORIENTATION.md`) are forbidden — they drift.
 
@@ -169,12 +169,14 @@ Agents never need a network round-trip to coordinate. The console is localhost-o
 
 Use Orchestrate for multi-agent parallelism across a repo; use MAteam for a disciplined single-task pipeline inside one host session.
 
-### 4.3 Runtime dependency edges (storage and admission shipped; notification and HA are not)
+### 4.3 Runtime dependency edges (storage, admission, and notification shipped; HA is not)
 
-> Edge-log storage and single-instance cycle admission are implemented
-> in `depgraph.db` (see [control-plane.md](./control-plane.md)). Targeted
-> notification and high availability are not implemented. Do not describe
-> this subsystem with collision-prevention or evidence-gated language.
+> Edge-log storage, single-instance cycle admission, and targeted
+> notification are implemented in `depgraph.db` (see
+> [control-plane.md](./control-plane.md)). High availability is not
+> implemented. Notification is delivered only when an agent calls
+> `edge-notify` after writing advisory state. Do not describe this
+> subsystem with collision-prevention or evidence-gated language.
 > Related open questions and rationale live alongside
 > [BRAINSTORM.md](../BRAINSTORM.md).
 

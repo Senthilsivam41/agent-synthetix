@@ -127,6 +127,43 @@ export type DependentsResult = {
   dependents: StoredDependencyEdge[];
 };
 
+export type DependencyNotifyRequest = {
+  api_version: typeof EDGE_LOG_API_VERSION;
+  actor: string;
+  session_id: string;
+  task_id: string;
+  writeback_id: string;
+};
+
+export type DependencyNotification = {
+  notified_task: string;
+  agent_id: string;
+  edge_epoch: number;
+  message_id: string;
+};
+
+export type DependencyNotifyResult = {
+  api_version: typeof EDGE_LOG_API_VERSION;
+  ok: true;
+  safe_to_proceed: true;
+  task_id: string;
+  writeback_id: string;
+  replayed: boolean;
+  notified: DependencyNotification[];
+};
+
+export type DependencySignal = {
+  id: string;
+  session_id: string;
+  from: string;
+  to: string;
+  type: "dependency_invalidated";
+  timestamp: string;
+  originating_task: string;
+  notified_task: string;
+  edge_epoch: number;
+};
+
 export type GuardMode = "report" | "warn" | "enforce";
 export type ExecutionState =
   | "queued"
