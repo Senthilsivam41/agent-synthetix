@@ -1,8 +1,8 @@
 # Current status
 
-**Updated:** 2026-11-04
-**Branch:** `feature/dependency-graph-phase-3`
-**Last slice:** Dependency-graph Phase 3 single-instance cycle admission
+**Updated:** 2026-11-05
+**Branch:** `feature/dependency-graph-phase-4`
+**Last slice:** Dependency-graph Phase 4 targeted dependent notification
 
 ## Product shape
 
@@ -85,9 +85,10 @@ cd console && npm install && npm run dev
 | 1 `getLeaseStatus` / `getTaskState` | Done |
 | 2 Edge log in `depgraph.db` (one process, no HA) | Done |
 | 3 Cycle admission (`CYCLE_DETECTED`, rebuild-before-serve) | Done |
-| 4–6 Notification, HA, doc merge | Not started |
+| 4 Targeted notification on `edge-notify` | Done |
+| 5–6 HA, doc merge | Not started |
 
-Phase 3 admits `edge-add` only after a component-scoped cycle check. `INDEX_REBUILDING` is fail-closed while a restart rebuilds the union-find. Notification and Kubernetes leader election are not implemented.
+Phase 4 writes `dependency_invalidated` only to the inbox of an agent that owns a live dependent task. `edge-add` still does not notify anyone. Kubernetes leader election is not implemented.
 
 ## Known gaps
 

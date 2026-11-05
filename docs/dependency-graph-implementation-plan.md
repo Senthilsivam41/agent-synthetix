@@ -124,16 +124,24 @@ verified under a forced crash test, not just at graceful shutdown.
 **Goal:** close the loop — when an agent adapts and writes back, its
 declared dependents are notified without broadcast to everyone.
 
-- [ ] On successful write-back to shared advisory state, query the Edge
+- [x] On successful write-back to shared advisory state, query the Edge
       Log's reverse index for live dependents of the writing task.
-- [ ] Deliver a lightweight, targeted signal (not payload-carrying — the
+- [x] Deliver a lightweight, targeted signal (not payload-carrying — the
       notified agent still pulls the actual plan from shared state) to
       only those dependents.
-- [ ] No new pub/sub broker — reuse the existing message bus /
+- [x] No new pub/sub broker — reuse the existing message bus /
       `.autoclaw` projection mechanism as the delivery surface.
-- [ ] Instrument: log every notification with correlation IDs
+- [x] Instrument: log every notification with correlation IDs
       (originating task, notified task, edge epoch) for later staleness
       analysis.
+
+Shipped as `edge-notify`. The caller invokes it after writing advisory
+state. The command reads live reverse-index rows and writes
+`dependency_invalidated` into `comms/inboxes/<agent-id>/` for the owner
+of each dependent task. It does not write `comms/inboxes/shared/`, and
+the signal carries no plan. The same `writeback_id` is delivered once.
+A removed edge is absent from the next write-back. This is not a kernel
+guarantee: an agent that never calls `edge-notify` is not notified.
 
 **Exit criteria:** in a multi-agent integration test, only agents with a
 declared `depends_on` edge receive a signal; unrelated agents do not.

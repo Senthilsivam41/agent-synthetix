@@ -17,6 +17,8 @@ import { validateContract } from "../control-plane/schemas";
 
 export type EdgeLogCommand = "claim" | "add" | "remove" | "dependents";
 
+export type EdgeRouteName = EdgeLogCommand | "notify";
+
 export type EdgeLogResponse = ClaimTaskResult | EdgeMutationResult | DependentsResult | EdgeLogError;
 
 export type EdgeLogRow = StoredDependencyEdge & { add_tag: number };
@@ -57,12 +59,13 @@ export function edgeLogHttpStatus(code: EdgeLogErrorCode) {
   }
 }
 
-export function edgeLogCommandForPath(pathname: string): EdgeLogCommand | null {
+export function edgeLogCommandForPath(pathname: string): EdgeRouteName | null {
   switch (pathname) {
     case "/api/orchestrator/v1/edges/claim": return "claim";
     case "/api/orchestrator/v1/edges": return "add";
     case "/api/orchestrator/v1/edges/remove": return "remove";
     case "/api/orchestrator/v1/edges/dependents": return "dependents";
+    case "/api/orchestrator/v1/edges/notify": return "notify";
     default: return null;
   }
 }
@@ -105,7 +108,7 @@ export class EdgeLog {
     fs.mkdirSync(path.dirname(this.dbPath), { recursive: true });
     this.db = new DatabaseSync(this.dbPath);
     try {
-      this.db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=10000;");
+      this.db.exec("PRAGMA busy_timeout=10000; PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");
       this.migrate();
     } catch (error) {
       this.db.close();
@@ -288,8 +291,12 @@ export class EdgeLog {
 
   private migrate() {
     const version = Number(this.db.prepare("PRAGMA user_version").get()?.user_version ?? 0);
-    if (version > 1) throw new Error(`edge log database version ${version} is newer than supported version 1`);
-    if (version === 1) return;
+    if (version > 2) throw new Error(`edge log database version ${version} is newer than supported version 2`);
+    if (version === 0) this.createEdgeStore();
+    if (version === 0 || version === 1) this.createNotificationStore();
+  }
+
+  private createEdgeStore() {
     this.db.exec(`
       BEGIN IMMEDIATE;
       CREATE TABLE edge_log_meta (
@@ -355,6 +362,49 @@ export class EdgeLog {
         WHERE OLD.removed_at IS NOT NULL OR NEW.removed_at IS NULL;
       END;
       PRAGMA user_version = 1;
+      COMMIT;
+    `);
+  }
+
+  private createNotificationStore() {
+    this.db.exec(`
+      BEGIN IMMEDIATE;
+      CREATE TABLE dependency_writebacks (
+        writeback_id TEXT PRIMARY KEY,
+        originating_task TEXT NOT NULL,
+        actor TEXT NOT NULL,
+        session_id TEXT NOT NULL,
+        notified_at TEXT NOT NULL
+      );
+      CREATE TABLE dependency_notifications (
+        writeback_id TEXT NOT NULL REFERENCES dependency_writebacks(writeback_id),
+        notified_task TEXT NOT NULL,
+        agent_id TEXT NOT NULL,
+        edge_epoch INTEGER NOT NULL,
+        message_id TEXT NOT NULL,
+        PRIMARY KEY (writeback_id, notified_task)
+      );
+      CREATE TRIGGER dependency_writebacks_no_delete
+      BEFORE DELETE ON dependency_writebacks
+      BEGIN
+        SELECT RAISE(ABORT, 'dependency write-back cannot be deleted');
+      END;
+      CREATE TRIGGER dependency_writebacks_no_update
+      BEFORE UPDATE ON dependency_writebacks
+      BEGIN
+        SELECT RAISE(ABORT, 'dependency write-back is immutable');
+      END;
+      CREATE TRIGGER dependency_notifications_no_delete
+      BEFORE DELETE ON dependency_notifications
+      BEGIN
+        SELECT RAISE(ABORT, 'dependency notification cannot be deleted');
+      END;
+      CREATE TRIGGER dependency_notifications_no_update
+      BEFORE UPDATE ON dependency_notifications
+      BEGIN
+        SELECT RAISE(ABORT, 'dependency notification is immutable');
+      END;
+      PRAGMA user_version = 2;
       COMMIT;
     `);
   }

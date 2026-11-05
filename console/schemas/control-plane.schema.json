@@ -468,6 +468,146 @@
       ],
       "additionalProperties": false
     },
+    "DependencyNotifyRequest": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "actor": {
+          "type": "string"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "task_id": {
+          "type": "string"
+        },
+        "writeback_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "api_version",
+        "actor",
+        "session_id",
+        "task_id",
+        "writeback_id"
+      ],
+      "additionalProperties": false
+    },
+    "DependencyNotification": {
+      "type": "object",
+      "properties": {
+        "notified_task": {
+          "type": "string"
+        },
+        "agent_id": {
+          "type": "string"
+        },
+        "edge_epoch": {
+          "type": "number"
+        },
+        "message_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "notified_task",
+        "agent_id",
+        "edge_epoch",
+        "message_id"
+      ],
+      "additionalProperties": false
+    },
+    "DependencyNotifyResult": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "ok": {
+          "type": "boolean",
+          "const": true
+        },
+        "safe_to_proceed": {
+          "type": "boolean",
+          "const": true
+        },
+        "task_id": {
+          "type": "string"
+        },
+        "writeback_id": {
+          "type": "string"
+        },
+        "replayed": {
+          "type": "boolean"
+        },
+        "notified": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DependencyNotification"
+          }
+        }
+      },
+      "required": [
+        "api_version",
+        "ok",
+        "safe_to_proceed",
+        "task_id",
+        "writeback_id",
+        "replayed",
+        "notified"
+      ],
+      "additionalProperties": false
+    },
+    "DependencySignal": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "dependency_invalidated"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "originating_task": {
+          "type": "string"
+        },
+        "notified_task": {
+          "type": "string"
+        },
+        "edge_epoch": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "session_id",
+        "from",
+        "to",
+        "type",
+        "timestamp",
+        "originating_task",
+        "notified_task",
+        "edge_epoch"
+      ],
+      "additionalProperties": false
+    },
     "GuardMode": {
       "type": "string",
       "enum": [
